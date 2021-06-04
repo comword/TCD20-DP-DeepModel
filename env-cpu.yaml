@@ -1,0 +1,19 @@
+# conda env create --name DProject -f env-cpu.yaml
+name: DProject
+channels:
+  - conda-forge 
+  - anaconda
+  - defaults
+dependencies:
+  - matplotlib
+  - pip
+  - pylint
+  - pandas
+  - numpy
+  - scipy
+  - scikit-learn
+  - jupyterlab
+  - tensorflow
+  - keras
+  - seaborn
+  - h5py=2.10.0
