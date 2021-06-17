@@ -16,4 +16,5 @@ dependencies:
   - tensorflow-gpu
   - keras-gpu
   - seaborn
+  - opencv
   - h5py=2.10.0
