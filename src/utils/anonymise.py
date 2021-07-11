@@ -41,8 +41,25 @@ class AnonymiAlgo:
 
         copy(in_path / "types.json", out_path / "types.json")
 
-    def process_video(self, path: str):
-        pass
+    def process_video(self, path: str, out: str):
+        cap = cv2.VideoCapture(path)
+        out = cv2.VideoWriter(
+            out, cv2.VideoWriter_fourcc(*'MP4V'), 25.0, (640, 640))
+        if (cap.isOpened() == False):
+            print("Error opening video file, skipping")
+            cap.release()
+            return
+        while(cap.isOpened()):
+            ret, frame = cap.read()
+            if ret == False:
+                print("Error reading video frame, skipping")
+                break
+            else:
+                ret = self.process_frame(frame)
+                if ret == False:
+                    print("Error processing video frame, skipping")
+                    break
+        cap.release()
 
     def process_frame(self, image: np.ndarray):
         img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -53,6 +70,7 @@ class AnonymiAlgo:
             (x, y, w, d) = face
 
         _, landmarks = self.landmark_detector.fit(img_equal, faces)
+
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser(description='Video anonymisation')
