@@ -8,7 +8,7 @@
     "args": {
       "backbone": "efficientnet-b0",
       "n_classes": 16,
-      "input_shape": [3, 224, 224]
+      "input_shape": [224, 224, 3]
     }
   },
   "data_loader": {

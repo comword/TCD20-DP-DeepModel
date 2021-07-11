@@ -34,7 +34,7 @@ def initializer(func):
 
 class VTNOptions:
     @initializer
-    def __init__(self, backbone="efficientnet-b0", n_classes=16, MLP_DIM=768, input_shape=[3, 224, 224],
+    def __init__(self, backbone="EfficientNetB0", n_classes=16, MLP_DIM=768, input_shape=[224, 224, 3],
                  HIDDEN_DIM=1280, MAX_POSITION_EMBEDDINGS=288, NUM_ATTENTION_HEADS=10,
                  NUM_HIDDEN_LAYERS=3, ATTENTION_MODE='sliding_chunks', PAD_TOKEN_ID=-1,
                  ATTENTION_WINDOW=[18, 18, 18], INTERMEDIATE_SIZE=3072, ATTENTION_PROBS_DROPOUT_PROB=0.1,

@@ -1,8 +1,7 @@
 # conda env create --name DProject -f env-cpu.yaml
 name: DProject
 channels:
-  - conda-forge 
-  - pytorch
+  - conda-forge
   - anaconda
   - defaults
 dependencies:
@@ -10,16 +9,14 @@ dependencies:
   - pip
   - pylint
   - pandas
-  - numpy
+  - numpy=1.19.5
   - scipy
   - scikit-learn
   - jupyterlab
   - opencv
   - tqdm
-  - pytorch
-  - torchvision
   - tensorboardx
   - tensorflow
-  - onnx
-  - efficientnet-pytorch
+  - seaborn
   - transformers
+  - h5py=2.10.0

@@ -1,4 +1,4 @@
-from .VTN import VTN
+from .vtn import VTN
 from .options import VTNOptions
 
 

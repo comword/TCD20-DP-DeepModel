@@ -9,12 +9,14 @@ dependencies:
   - pip
   - pylint
   - pandas
-  - numpy
+  - numpy=1.19.5
   - scipy
   - scikit-learn
   - jupyterlab
-  - tensorflow-gpu
-  - keras-gpu
-  - seaborn
   - opencv
+  - tqdm
+  - tensorboardx
+  - tensorflow-gpu
+  - seaborn
+  - transformers
   - h5py=2.10.0
