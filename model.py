@@ -2,6 +2,7 @@ import os
 import sys
 import tensorflow as tf
 import numpy as np
+import pandas as pd
 
 src_dir = os.path.join("src")
 sys.path.insert(0, src_dir)
@@ -14,23 +15,17 @@ test = [tf.random.uniform((1, 3, 25, 224, 224)), np.arange(
     0, 1*25).reshape((1, 25))]  # B, C, F, H, W
 out = model(test)
 print(out.shape)
-model.summary()
-# _________________________________________________________________
-# Layer (type)                 Output Shape              Param #
-# =================================================================
-# efficientnetb0 (Functional)  (None, 7, 7, 1280)        4049571
-# _________________________________________________________________
-# sequential (Sequential)      (25, 384)                 491904
-# _________________________________________________________________
-# vtn_distil_bert_layer (VTNDi multiple                  14532608
-# _________________________________________________________________
-# sequential_1 (Sequential)    (1, 16)                   154000
-# =================================================================
-# Total params: 19,228,467
-# Trainable params: 19,186,444
-# Non-trainable params: 42,023
-# _________________________________________________________________
-
+# model.summary(line_length=400)
+table = pd.DataFrame(columns=["Name", "Type", "Output Shape", "Param #"])
+for layer in model.layers:
+    table = table.append(
+        {
+            "Name": layer.name, 
+            "Type": layer.__class__.__name__, 
+            "Output Shape": layer.output_shape,
+            "Param #": layer.count_params()
+        }, ignore_index=True)
+print(table.to_latex(index=False))
 # model.compile(optimizer='sgd', loss='mean_squared_error')
 # def _input_fn():
 #   img = np.random.rand(3, 25, 224, 224)
