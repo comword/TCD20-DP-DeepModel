@@ -1,4 +1,5 @@
-from transformers import TFLongformerModel, LongformerConfig
+from transformers import LongformerConfig
+from .modeling_tf_longformer import TFLongformerModel
 import tensorflow as tf
 
 
