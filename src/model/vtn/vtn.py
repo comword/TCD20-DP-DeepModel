@@ -1,8 +1,9 @@
 import tensorflow as tf
-from transformers import RobertaConfig, TFRobertaModel
+from transformers import DistilBertConfig
+from .modeling_tf_distilbert import TFDistilBertModel
 
 
-class VTNRobertaLayer(TFRobertaModel):
+class VTNDistilBertLayer(TFDistilBertModel):
     def __init__(self,
                  embed_dim=768,
                  max_position_embeddings=200,
@@ -12,16 +13,17 @@ class VTNRobertaLayer(TFRobertaModel):
                  intermediate_size=3072,
                  attention_probs_dropout_prob=0.1,
                  hidden_dropout_prob=0.1):
-        self.config = RobertaConfig()
-        self.config.intermediate_size = intermediate_size
-        self.config.attention_probs_dropout_prob = attention_probs_dropout_prob
-        self.config.hidden_dropout_prob = hidden_dropout_prob
-        self.config.num_hidden_layers = num_hidden_layers
-        self.config.num_attention_heads = num_attention_heads
+        self.config = DistilBertConfig()
+        self.config.type_vocab_size = 2
+        self.config.hidden_dim = intermediate_size
+        self.config.attention_dropout = attention_probs_dropout_prob
+        self.config.dropout = hidden_dropout_prob
+        self.config.n_layers = num_hidden_layers
+        self.config.n_heads = num_attention_heads
         self.config.pad_token_id = pad_token_id
         self.config.max_position_embeddings = max_position_embeddings
-        self.config.hidden_size = embed_dim
-        super(VTNRobertaLayer, self).__init__(self.config)
+        self.config.dim = embed_dim
+        super(VTNDistilBertLayer, self).__init__(self.config)
 
 
 class VTN(tf.keras.Model):
@@ -31,14 +33,15 @@ class VTN(tf.keras.Model):
             include_top=False, weights='imagenet', input_shape=cfg.input_shape)
 
         self.bb_to_encoder = tf.keras.Sequential([
+            tf.keras.layers.GlobalAveragePooling2D(),
             tf.keras.layers.Dropout(cfg.HIDDEN_DROPOUT_PROB),
-            tf.keras.layers.Dense(units=cfg.HIDDEN_DIM, activation='gelu')
+            tf.keras.layers.Dense(units=cfg.HIDDEN_DIM, activation='relu')
         ])
 
         self.cls_token = tf.Variable(tf.random_normal_initializer(
             mean=0., stddev=1.)(shape=[1, 1, cfg.HIDDEN_DIM]))
 
-        self.temporal_encoder = VTNRobertaLayer(
+        self.temporal_encoder = VTNDistilBertLayer(
             embed_dim=cfg.HIDDEN_DIM,
             max_position_embeddings=cfg.MAX_POSITION_EMBEDDINGS,
             num_attention_heads=cfg.NUM_ATTENTION_HEADS,
@@ -49,7 +52,6 @@ class VTN(tf.keras.Model):
             hidden_dropout_prob=cfg.HIDDEN_DROPOUT_PROB)
 
         self.mlp_head = tf.keras.Sequential([
-            tf.keras.layers.LayerNormalization(),
             tf.keras.layers.Dense(units=cfg.MLP_DIM, activation='gelu'),
             tf.keras.layers.Dropout(cfg.MLP_DROPOUT_RATE),
             tf.keras.layers.Dense(cfg.n_classes, activation='softmax'),
@@ -62,7 +64,6 @@ class VTN(tf.keras.Model):
         x = tf.transpose(x, perm=[0, 2, 3, 4, 1])  # B, F, H, W, C
         x = tf.reshape(x, (B * F, H, W, C))
         x = self.backbone(x)
-        x = tf.keras.layers.GlobalAveragePooling2D()(x)
         x = self.bb_to_encoder(x)
         x = tf.reshape(x, (B, F, -1))
 
@@ -77,11 +78,11 @@ class VTN(tf.keras.Model):
             tf.cast(tf.transpose(tf.pad(tf.zeros([D, B]), [[1, 0], [0, 0]], constant_values=True)),
                     tf.bool), 2., attention_mask)
         token_type_ids = tf.cast(tf.transpose(tf.pad(tf.zeros(
-            [tf.shape(x)[1]-1, B]), [[1, 0], [0, 0]], constant_values=1)), tf.int64)
+            [tf.shape(x)[1]-1, B]), [[1, 0], [0, 0]], constant_values=1)), tf.int32)
 
         position_ids = tf.pad(position_ids, tf.convert_to_tensor(
             [[0, 0], [0, 1]]), constant_values=0)
-        position_ids = tf.cast(position_ids, tf.int64)
+        position_ids = tf.cast(position_ids, tf.int32)
         mask = tf.cast(tf.not_equal(attention_mask, 0), tf.int32)
         max_position_embeddings = self.temporal_encoder.config.max_position_embeddings
         position_ids = position_ids % (max_position_embeddings - 2)
@@ -89,9 +90,9 @@ class VTN(tf.keras.Model):
         position_ids = tf.where(
             tf.cast(tf.transpose(tf.pad(tf.zeros([tf.shape(position_ids)[1]-1, B]), [[1, 0], [0, 0]],
                                         constant_values=True)), tf.bool), tf.convert_to_tensor([max_position_embeddings - 2],
-                                                                                               dtype=tf.int64), position_ids)
+                                                                                               dtype=tf.int32), position_ids)
         position_ids = tf.where(
-            mask == 0, tf.convert_to_tensor([max_position_embeddings - 1], dtype=tf.int64), position_ids)
+            mask == 0, tf.convert_to_tensor([max_position_embeddings - 1], dtype=tf.int32), position_ids)
 
         x = self.temporal_encoder(input_ids=None,
                                   attention_mask=attention_mask,

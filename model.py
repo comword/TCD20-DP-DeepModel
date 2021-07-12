@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 import tensorflow as tf
 import numpy as np
 
@@ -9,23 +10,24 @@ from model.vtn import VTNBuilder
 
 model = VTNBuilder()
 
-test = [tf.random.uniform((1, 3, 25, 224, 224)), np.arange(0, 1*25).reshape((1, 25))]  # B, C, F, H, W
+test = [tf.random.uniform((1, 3, 25, 224, 224)), np.arange(
+    0, 1*25).reshape((1, 25))]  # B, C, F, H, W
 out = model(test)
 print(out.shape)
 model.summary()
 # _________________________________________________________________
-# Layer (type)                 Output Shape              Param #   
+# Layer (type)                 Output Shape              Param #
 # =================================================================
-# efficientnetb0 (Functional)  (None, 7, 7, 1280)        4049571   
+# efficientnetb0 (Functional)  (None, 7, 7, 1280)        4049571
 # _________________________________________________________________
-# sequential (Sequential)      (None, 512)               655872    
+# sequential (Sequential)      (25, 384)                 491904
 # _________________________________________________________________
-# vtn_roberta_layer (VTNRobert multiple                  20163072  
+# vtn_distil_bert_layer (VTNDi multiple                  14532608
 # _________________________________________________________________
-# sequential_1 (Sequential)    (None, 16)                271888    
+# sequential_1 (Sequential)    (1, 16)                   154000
 # =================================================================
-# Total params: 25,140,915
-# Trainable params: 25,098,892
+# Total params: 19,228,467
+# Trainable params: 19,186,444
 # Non-trainable params: 42,023
 # _________________________________________________________________
 
@@ -50,6 +52,7 @@ model.save_weights("saved/pcs-vtn")
 
 converter = tf.lite.TFLiteConverter.from_keras_model(model)
 converter.optimizations = [tf.lite.Optimize.DEFAULT]
+# converter.target_spec.supported_types = [tf.float16]
 converter.experimental_new_converter = True
 # converter.allow_custom_ops = True
 converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS,
