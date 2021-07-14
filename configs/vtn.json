@@ -1,0 +1,31 @@
+{
+    "name": "DP_Posture",
+    "n_gpu": 1,
+    "save_dir": "saved/",
+    "arch": {
+      "type": "VTNBuilder",
+      "args": {
+        "backbone": "efficientnet-b0",
+        "n_classes": 16
+      }
+    },
+    "data_loader": {
+      "type": "FrameDataLoader",
+      "args": {
+        "data_path": "data/anonymisedVideos",
+        "batch_size": 50,
+        "shuffle": true,
+        "validation_split": 0.1,
+        "num_workers": 1
+      }
+    },
+    "trainer": {
+        "epochs": 100,
+        "save_period": 10,
+        "verbosity": 2,
+        "monitor": "max val_accuracy",
+        "early_stop": 15,
+        "tensorboard": false
+      }
+}
+  

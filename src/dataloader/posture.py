@@ -41,10 +41,6 @@ class Posture(tfds.core.GeneratorBasedBuilder):
 
   def _split_generators(self, dl_manager: tfds.download.DownloadManager):
     """Returns SplitGenerators."""
-    # TODO(posture): Downloads the data and defines the splits
-    path = dl_manager.download_and_extract('https://todo-data-url')
-
-    # TODO(posture): Returns the Dict[split names, Iterator[Key, Example]]
     return {
         'train': self._generate_examples(path / 'train_imgs'),
     }

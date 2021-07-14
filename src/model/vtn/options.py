@@ -35,7 +35,7 @@ def initializer(func):
 class VTNOptions:
     @initializer
     def __init__(self, backbone="EfficientNetB0", n_classes=16, MLP_DIM=384, input_shape=[3, 15, 224, 224],
-                 HIDDEN_DIM=384, MAX_POSITION_EMBEDDINGS=128, NUM_ATTENTION_HEADS=4, NUM_HIDDEN_LAYERS=2,
+                 HIDDEN_DIM=384, MAX_POSITION_EMBEDDINGS=288, NUM_ATTENTION_HEADS=4, NUM_HIDDEN_LAYERS=2,
                  PAD_TOKEN_ID=-1, INTERMEDIATE_SIZE=1024, ATTENTION_PROBS_DROPOUT_PROB=0.1,
                  HIDDEN_DROPOUT_PROB=0.1, MLP_DROPOUT_RATE=0.4, temporal="VTNRobertaLayer"):
         self.input_shape = tuple(input_shape)
