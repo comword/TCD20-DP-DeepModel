@@ -11,11 +11,11 @@ from model.vtn import VTNBuilder
 
 model = VTNBuilder()
 
-test = [tf.random.uniform((1, 3, 25, 224, 224)), np.arange(
-    0, 1*25).reshape((1, 25))]  # B, C, F, H, W
+test = [tf.random.uniform((1, 3, 15, 224, 224)), np.arange(
+    0, 1*15).reshape((1, 15))]  # B, C, F, H, W
 out = model(test)
 print(out.shape)
-# model.summary(line_length=400)
+model.summary(line_length=400)
 table = pd.DataFrame(columns=["Name", "Type", "Output Shape", "Param #"])
 for layer in model.layers:
     table = table.append(

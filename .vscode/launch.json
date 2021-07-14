@@ -13,10 +13,10 @@
       "justMyCode": false
     },
     {
-      "name": "Python: Anonymise",
+      "name": "Python: Prepare",
       "type": "python",
       "request": "launch",
-      "program": "src/util/anonymise.py",
+      "program": "src/utils/prepare.py",
       "console": "integratedTerminal",
       "args": [
         "-a",
@@ -24,9 +24,9 @@
         "-l",
         "data/face-model/lbfmodel.yaml",
         "-i",
-        "data/originalVideos",
+        "data/orig-front-videos",
         "-o",
-        "data/anonymisedVideos"
+        "data/anonymisedVideos",
       ]
     }
   ]
