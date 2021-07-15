@@ -1,55 +1,69 @@
 """posture dataset."""
-
+import json
 import tensorflow_datasets as tfds
+import pandas as pd
+from pathlib import Path
 
-# TODO(posture): Markdown description  that will appear on the catalog page.
 _DESCRIPTION = """
 This data set contains videos for different exam actions
 """
 
-# TODO(posture): BibTeX citation
 _CITATION = """
 """
 
 
+class PostureVideoConfig(tfds.core.BuilderConfig):
+    """Config for StarcraftVideo dataset."""
+
+    def __init__(self, *, data_path, resolution, batch_frame, **kwargs):
+        super(PostureVideoConfig, self).__init__(
+            version=tfds.core.Version("1.0.0"),
+            release_notes={
+                '1.0.0': 'Initial release.',
+            },
+            **kwargs)
+        self.data_path = Path(data_path)
+        self.resolution = resolution
+        self.batch_frame = batch_frame
+
+
 class Posture(tfds.core.GeneratorBasedBuilder):
-  """DatasetBuilder for posture dataset."""
+    """DatasetBuilder for posture dataset."""
 
-  VERSION = tfds.core.Version('1.0.0')
-  RELEASE_NOTES = {
-      '1.0.0': 'Initial release.',
-  }
-
-  def _info(self) -> tfds.core.DatasetInfo:
-    """Returns the dataset metadata."""
-    # TODO(posture): Specifies the tfds.core.DatasetInfo object
-    return tfds.core.DatasetInfo(
-        builder=self,
-        description=_DESCRIPTION,
-        features=tfds.features.FeaturesDict({
-            # These are the features of your dataset like images, labels ...
-            'image': tfds.features.Image(shape=(None, None, 3)),
-            'label': tfds.features.ClassLabel(names=['no', 'yes']),
-        }),
-        # If there's a common (input, target) tuple from the
-        # features, specify them here. They'll be used if
-        # `as_supervised=True` in `builder.as_dataset`.
-        supervised_keys=('image', 'label'),  # Set to `None` to disable
-        homepage='https://dataset-homepage/',
-        citation=_CITATION,
-    )
-
-  def _split_generators(self, dl_manager: tfds.download.DownloadManager):
-    """Returns SplitGenerators."""
-    return {
-        'train': self._generate_examples(path / 'train_imgs'),
+    VERSION = tfds.core.Version('1.0.0')
+    RELEASE_NOTES = {
+        '1.0.0': 'Initial release.',
     }
 
-  def _generate_examples(self, path):
-    """Yields examples."""
-    # TODO(posture): Yields (key, example) tuples from the dataset
-    for f in path.glob('*.jpeg'):
-      yield 'key', {
-          'image': f,
-          'label': 'yes',
-      }
+    def _info(self) -> tfds.core.DatasetInfo:
+        """Returns the dataset metadata."""
+        with open(str(self.builder_config.data_path / "types.json"), "r") as f:
+            self.cls_types = json.load(f)
+        self.labels = pd.read_csv(
+            self.builder_config.data_path / "videos.csv")
+        return tfds.core.DatasetInfo(
+            builder=self,
+            description=_DESCRIPTION,
+            features=tfds.features.FeaturesDict({
+                # These are the features of your dataset like images, labels ...
+                'video': tfds.features.Video(shape=(None, self.builder_config.resolution[0],
+                                                    self.builder_config.resolution[1], 3), encoding_format='jpeg'),
+                'frame_idx': tfds.features.Tensor(shape=(self.batch_frame)),
+                'label': tfds.features.ClassLabel(num_classes=len(self.cls_types), names=self.cls_types.keys()),
+            }),
+            supervised_keys=('video', 'label'),
+            citation=_CITATION,
+        )
+
+    def _split_generators(self, dl_manager: tfds.download.DownloadManager):
+        """Returns SplitGenerators."""
+        return {
+            'train': self._generate_examples(self.builder_config.data_path),
+        }
+
+    def _generate_examples(self, path):
+        for f in path.glob('*.jpg'):
+            yield 'key', {
+                'image': f,
+                'label': 0,
+            }

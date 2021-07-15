@@ -16,7 +16,13 @@
         "batch_size": 50,
         "shuffle": true,
         "validation_split": 0.1,
-        "num_workers": 1
+        "resolution": [224, 224],
+        "batch_frame": 15,
+        "batch_second": 5,
+        "num_clips": 10,
+        "resize_fac": [0.8, 1.2],
+        "mean_norm": [0.45, 0.45, 0.45],
+        "std_norm": [0.225, 0.225, 0.225]
       }
     },
     "trainer": {

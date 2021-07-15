@@ -3,6 +3,7 @@ import json
 import numpy as np
 import pandas as pd
 from pathlib import Path
+from shutil import copy
 from glob import glob
 from tqdm import tqdm
 import cv2
@@ -54,6 +55,7 @@ class DatasetPrepare:
         for video in files:
             self.process_video(Path(video), out_path)
 
+        copy(in_path / "types.json", out_path / "types.json")
         self.table.to_csv(out_path / "videos.csv", index=False)
 
     def process_video(self, path: Path, out: Path):

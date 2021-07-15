@@ -12,12 +12,12 @@ dependencies:
   - numpy=1.19.5
   - scipy
   - scikit-learn
+  - scikit-image
   - jupyterlab
   - opencv
   - tqdm
   - tensorboardx
   - tensorflow-gpu
-  - tensorflow-datasets
   - seaborn
   - transformers
   - h5py=2.10.0
