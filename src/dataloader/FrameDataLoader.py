@@ -13,8 +13,7 @@ from .transform import random_crop, color_normalization
 
 class FrameDataLoader(tf.keras.utils.Sequence):
     @initializer
-    def __init__(self, data_path, resolution, batch_frame, batch_second,
-                 num_clips=15, resize_fac=[0.8, 1.2], mean_norm=[0.45, 0.45, 0.45], std_norm=[0.225, 0.225, 0.225]):
+    def __init__(self, data_path, batch_frame, batch_second, num_clips=12):
         self.data_path = Path(data_path)
         with open(str(self.data_path / "types.json"), "r") as f:
             self.cls_types = json.load(f)
@@ -72,43 +71,88 @@ class FrameDataLoader(tf.keras.utils.Sequence):
         frame_idx = np.linspace(
             start_idx, end_idx, self.batch_frame).astype(int)
         frame_idx = np.clip(frame_idx, 0, len(self.files[vid])-1)
-        img_shape = cv2.imread(self.files[vid][0][1]).shape  # H, W, C
-        frames = np.zeros(
-            (self.batch_frame, img_shape[0], img_shape[1], img_shape[2]), dtype=np.float32)
-        fid = 0
+
+        frames = []
         for i in frame_idx:
-            raw_data = cv2.imread(self.files[vid][i-1][1])
-            rgb_data = cv2.cvtColor(raw_data, cv2.COLOR_BGR2RGB) / 255.0
-            frames[fid] = rgb_data
-            fid += 1
-        
-        frames = np.transpose(frames, (0, 3, 1, 2))  # F, C, H, W
-        frames = color_normalization(frames, self.mean_norm, self.std_norm)
-        # resize data augment
-        resize_factor = random.uniform(self.resize_fac[0], self.resize_fac[1])
-        resized = np.zeros((self.batch_frame, frames.shape[1], int(
-            frames.shape[2]*resize_factor), int(frames.shape[3]*resize_factor)))
-        for n, i in enumerate(frames):
-            resized[n, :, :, :] = resize(
-                frames[n, :, :, :], resized.shape[1:], anti_aliasing=True)
-        frames = resized
-
-        # random crop data augment
-        img_shape = frames.shape
-        if img_shape[2] != img_shape[3]:
-            frames = random_crop(frames, min(
-                img_shape[2], img_shape[3]) * resize_factor)
-        # if img_shape[2] > self.resolution[0] and img_shape[3] > self.resolution[1]:
-        #     pass
-
-        # final resize
-        resized = np.zeros((self.batch_frame, frames.shape[1], self.resolution[0], self.resolution[1]))
-        for n, i in enumerate(frames):
-            resized[n, :, :, :] = resize(
-                frames[n, :, :, :], resized.shape[1:], anti_aliasing=True)
-        frames = np.transpose(resized, (0, 2, 3, 1)) # F, H, W, C
+            frames.append(self.files[vid][i][1])
         return frames, frame_idx, label
 
     def __call__(self):
         for i in range(self.__len__()):
             yield self.__getitem__(i)
+
+
+def dataloader_wrapper(imgs, frame_idx, label,
+                       resize_fac=[0.8, 1.2], mean_norm=[0.45, 0.45, 0.45], std_norm=[0.225, 0.225, 0.225]):
+    return tf.py_function(dataloader, inp=[imgs, frame_idx, label, resize_fac, mean_norm, std_norm],
+                          Tout=[tf.float32, tf.int32, tf.int32])
+
+
+def dataloader(imgs, frame_idx, label, resize_fac, mean_norm, std_norm, resolution):
+    imgs = imgs.numpy()
+    img_shape = cv2.imread(imgs[0].decode("utf-8")).shape  # H, W, C
+    frames = np.zeros(
+        (imgs.shape[0], img_shape[0], img_shape[1], img_shape[2]), dtype=np.float32)
+    fid = 0
+    for i in imgs:
+        raw_data = cv2.imread(i.decode("utf-8"))
+        rgb_data = cv2.cvtColor(raw_data, cv2.COLOR_BGR2RGB) / 255.0
+        frames[fid] = rgb_data
+        fid += 1
+
+    frames = np.transpose(frames, (0, 3, 1, 2))  # F, C, H, W
+    frames = color_normalization(frames, mean_norm, std_norm)
+    # resize data augment
+    resize_factor = random.uniform(resize_fac[0], resize_fac[1])
+    resized = np.zeros((imgs.shape[0], frames.shape[1], int(
+        frames.shape[2]*resize_factor), int(frames.shape[3]*resize_factor)))
+    for n, i in enumerate(frames):
+        resized[n, :, :, :] = resize(
+            frames[n, :, :, :], resized.shape[1:], anti_aliasing=True)
+    frames = resized
+
+    # random crop data augment
+    img_shape = frames.shape
+    if img_shape[2] != img_shape[3]:
+        frames = random_crop(frames, min(
+            img_shape[2], img_shape[3]) * resize_factor)
+    # if img_shape[2] > self.resolution[0] and img_shape[3] > self.resolution[1]:
+    #     pass
+
+    # final resize
+    resized = np.zeros(
+        (imgs.shape[0], frames.shape[1], resolution[0], resolution[1]))
+    for n, i in enumerate(frames):
+        resized[n, :, :, :] = resize(
+            frames[n, :, :, :], resized.shape[1:], anti_aliasing=True)
+    frames = np.transpose(resized, (0, 2, 3, 1))  # F, H, W, C
+    return frames, frame_idx, label
+
+
+class FrameDataLoaderTF:
+
+    def __init__(self, *args, batch_size=15, resolution=[224, 224], resize_fac=[0.8, 1.2],
+                 mean_norm=[0.45, 0.45, 0.45], std_norm=[0.225, 0.225, 0.225], shuffle=False, validation_split=0.1, **kwargs):
+        self.batch_size = batch_size
+        self.loader = FrameDataLoader(*args, **kwargs)
+        types = (tf.string, tf.int32, tf.int32)
+        ds = tf.data.Dataset.from_generator(self.loader, output_types=types)
+        ds = ds.map(lambda imgs, frame_idx, label: tf.py_function(dataloader,
+                                                                  inp=[
+                                                                      imgs, frame_idx, label, resize_fac,
+                                                                      mean_norm, std_norm, resolution],
+                                                                  Tout=[tf.float32, tf.int32, tf.int32]), num_parallel_calls=8)
+        ds = ds.batch(batch_size).prefetch(batch_size)
+        if shuffle:
+            ds = ds.shuffle(batch_size)
+        train_size = int((1 - validation_split) * self.__len__())
+        # val_size = int(validation_split * self.__len__())
+        self.train_dataset = ds.take(train_size)
+        self.val_dataset = ds.skip(train_size)
+        self.full_ds = ds
+
+    def getDataset(self):
+        return self.train_dataset, self.val_dataset
+
+    def __len__(self):
+        return self.loader.__len__() // self.batch_size
