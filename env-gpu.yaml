@@ -17,7 +17,7 @@ dependencies:
   - opencv
   - tqdm
   - tensorboardx
-  - tensorflow-gpu
+  - tensorflow-gpu=2.4.1
   - seaborn
   - transformers
   - h5py=2.10.0

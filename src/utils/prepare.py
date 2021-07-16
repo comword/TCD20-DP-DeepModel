@@ -117,11 +117,11 @@ class DatasetPrepare:
 
             _, landmarks = self.landmark_detector.fit(img_equal, faces)
             for (idx, it) in enumerate(landmarks):
-                color = self.colors[idx%3]
+                color = self.colors[idx % 3]
                 for point in it[0]:
-                    cx = round( point[0] )
-                    cy = round( point[1] )
-                    cv2.circle( image, (cx, cy), 2, color, -1 )
+                    cx = round(point[0])
+                    cy = round(point[1])
+                    cv2.circle(image, (cx, cy), 2, color, -1)
 
         cv2.imwrite(out, image, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
         return True
@@ -131,7 +131,7 @@ if __name__ == '__main__':
     args = argparse.ArgumentParser(description='Video anonymisation')
     args.add_argument('-a', '--haar', default=None, type=str, required=True,
                       help='haar cascade model path')
-    args.add_argument('-m', '--mask', default=False, action='store_true', 
+    args.add_argument('-m', '--mask', default=False, action='store_true',
                       help='mask faces in the videos')
     args.add_argument('-l', '--lbf', default=None, type=str, required=True,
                       help='FacemarkLBF model path')

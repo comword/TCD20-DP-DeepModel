@@ -136,16 +136,16 @@ class FrameDataLoaderTF:
                                                                   inp=[
                                                                       imgs, frame_idx, label, resize_fac,
                                                                       mean_norm, std_norm, resolution],
-                                                                  Tout=[tf.float32, tf.int32, tf.int32]), num_parallel_calls=8)
-        ds = ds.batch(batch_size).prefetch(batch_size)
+                                                                  Tout=[tf.float32, tf.int32, tf.int32]), num_parallel_calls=16)
+        ds = ds.batch(batch_size)
         if shuffle:
-            ds = ds.shuffle(batch_size // 3)
-        self.full_ds = ds
+            ds = ds.shuffle(batch_size // 2)
+        self.full_ds = ds.prefetch(batch_size)
         if validation_split > 0:
             self.split_validation = True
-            self.train_size = int((1 - validation_split) * self.__len__())
-            self.train_dataset = ds.take(self.train_size)
-            self.val_dataset = ds.skip(self.train_size)
+            self.val_size = int(validation_split * self.__len__())
+            self.train_dataset = ds.skip(self.val_size)
+            self.val_dataset = ds.take(self.val_size)
         else:
             self.split_validation = False
         self.full_ds = ds
@@ -160,16 +160,16 @@ class FrameDataLoaderTF:
         return self.train_dataset, self.val_dataset
 
     def getTrainLen(self):
-        if not self.train_size:
+        if not self.val_size:
             return self.__len__()
         else:
-            return self.train_size
+            return self.__len__() - self.val_size
 
     def getValLen(self):
-        if not self.train_size:
+        if not self.val_size:
             return 0
         else:
-            return self.__len__()-self.train_size
+            return self.val_size
 
     def __len__(self):
         return self.loader.__len__() // self.batch_size

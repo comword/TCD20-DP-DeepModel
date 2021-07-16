@@ -39,7 +39,8 @@ class TensorboardWriter():
             self.timer = datetime.now()
         else:
             duration = datetime.now() - self.timer
-            self.scalar('steps_per_sec', 1 / duration.total_seconds())
+            self.scalar('steps_per_sec', 1 /
+                        duration.total_seconds(), step=self.step)
             self.timer = datetime.now()
 
     def __getattr__(self, name):
@@ -58,7 +59,7 @@ class TensorboardWriter():
                     if name not in self.tag_mode_exceptions:
                         tag = '{}/{}'.format(tag, self.mode)
                     with self.writer.as_default():
-                        add_data(tag, data, step=self.step, *args, **kwargs)
+                        add_data(tag, data, *args, **kwargs)
 
             return wrapper
         else:
@@ -66,5 +67,6 @@ class TensorboardWriter():
             try:
                 attr = object.__getattr__(name)
             except AttributeError:
-                raise AttributeError("type object '{}' has no attribute '{}'".format(self.selected_module, name))
+                raise AttributeError("type object '{}' has no attribute '{}'".format(
+                    self.selected_module, name))
             return attr

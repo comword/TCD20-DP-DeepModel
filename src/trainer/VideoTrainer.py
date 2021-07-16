@@ -52,8 +52,13 @@ class VideoTrainer(BaseTrainer):
 
             train_loss(loss)
             train_accuracy(target, predictions)
-            self.writer.set_step((epoch - 1) * batch_size + batch_idx)
-            tbar.set_description('Train loss: %.3f' % train_loss.result())
+            step_count = (epoch - 1) * batch_size + batch_idx
+            self.writer.set_step(step_count)
+            loss_res = train_loss.result()
+            acc_res = train_accuracy.result()
+            self.writer.scalar('train/step_loss', loss_res, step_count)
+            self.writer.scalar('train/step_accuracy', acc_res, step_count)
+            tbar.set_description('Train loss: %.3f' % loss_res)
         loss_res = train_loss.result()
         acc_res = train_accuracy.result()
         self.writer.scalar('train/loss', loss_res, epoch)
@@ -74,19 +79,26 @@ class VideoTrainer(BaseTrainer):
             'val_accuracy')
         tbar = tqdm(self.val_ds, total=self.data_loader.getValLen())
         for batch_idx, (imgs, frame_idx, target) in enumerate(tbar):
+            batch_size = imgs.shape[0]
             predictions = self.model([imgs, frame_idx], training=False)
             loss = self.loss(target, predictions)
 
             test_loss(loss)
             test_accuracy(target, predictions)
-            tbar.set_description('Test loss: %.3f' % test_loss.result())
+            step_count = (epoch - 1) * batch_size + batch_idx
+            self.writer.set_step(step_count, mode='valid')
+            loss_res = test_loss.result()
+            acc_res = test_accuracy.result()
+            self.writer.scalar('val/step_loss', loss_res, step_count)
+            self.writer.scalar('val/step_accuracy', acc_res, step_count)
+            tbar.set_description('Test loss: %.3f' % loss_res)
         loss_res = test_loss.result()
         acc_res = test_accuracy.result()
         self.writer.scalar('val/loss', loss_res, epoch)
         self.writer.scalar('val/accuracy', acc_res, epoch)
         return {
-            'val_loss': loss_res,
-            'val_accuracy': acc_res
+            'loss': loss_res,
+            'accuracy': acc_res
         }
 
     # TODO: full test
