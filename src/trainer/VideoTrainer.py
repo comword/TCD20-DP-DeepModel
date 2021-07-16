@@ -56,8 +56,8 @@ class VideoTrainer(BaseTrainer):
             tbar.set_description('Train loss: %.3f' % train_loss.result())
         loss_res = train_loss.result()
         acc_res = train_accuracy.result()
-        self.writer.add_scalar('train/loss', loss_res, epoch)
-        self.writer.add_scalar('train/accuracy', acc_res, epoch)
+        self.writer.scalar('train/loss', loss_res, epoch)
+        self.writer.scalar('train/accuracy', acc_res, epoch)
 
         log = {
             'train_loss': loss_res,
@@ -82,8 +82,8 @@ class VideoTrainer(BaseTrainer):
             tbar.set_description('Test loss: %.3f' % test_loss.result())
         loss_res = test_loss.result()
         acc_res = test_accuracy.result()
-        self.writer.add_scalar('val/loss', loss_res, epoch)
-        self.writer.add_scalar('val/accuracy', acc_res, epoch)
+        self.writer.scalar('val/loss', loss_res, epoch)
+        self.writer.scalar('val/accuracy', acc_res, epoch)
         return {
             'val_loss': loss_res,
             'val_accuracy': acc_res

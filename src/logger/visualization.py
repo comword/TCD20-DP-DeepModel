@@ -27,10 +27,9 @@ class TensorboardWriter():
         self.mode = ''
 
         self.tb_writer_ftns = {
-            'add_scalar', 'add_scalars', 'add_image', 'add_images', 'add_audio',
-            'add_text', 'add_histogram', 'add_pr_curve', 'add_embedding'
+            'scalar', 'audio', 'flush', 'histogram', 'image', 'text'
         }
-        self.tag_mode_exceptions = {'add_histogram', 'add_embedding'}
+        self.tag_mode_exceptions = {'histogram'}
         self.timer = datetime.now()
 
     def set_step(self, step, mode='train'):
@@ -40,7 +39,7 @@ class TensorboardWriter():
             self.timer = datetime.now()
         else:
             duration = datetime.now() - self.timer
-            self.add_scalar('steps_per_sec', 1 / duration.total_seconds())
+            self.scalar('steps_per_sec', 1 / duration.total_seconds())
             self.timer = datetime.now()
 
     def __getattr__(self, name):
@@ -51,14 +50,16 @@ class TensorboardWriter():
             return a blank function handle that does nothing
         """
         if name in self.tb_writer_ftns:
-            add_data = getattr(self.writer, name, None)
+            add_data = getattr(tf.summary, name, None)
 
             def wrapper(tag, data, *args, **kwargs):
                 if add_data is not None:
                     # add mode(train/valid) tag
                     if name not in self.tag_mode_exceptions:
                         tag = '{}/{}'.format(tag, self.mode)
-                    add_data(tag, data, self.step, *args, **kwargs)
+                    with self.writer.as_default():
+                        add_data(tag, data, step=self.step, *args, **kwargs)
+
             return wrapper
         else:
             # default action for returning methods defined in this class, set_step() for instance.
