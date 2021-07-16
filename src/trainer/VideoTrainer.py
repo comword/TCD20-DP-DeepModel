@@ -75,7 +75,7 @@ class VideoTrainer(BaseTrainer):
         tbar = tqdm(self.val_ds, total=self.data_loader.getValLen())
         for batch_idx, (imgs, frame_idx, target) in enumerate(tbar):
             predictions = self.model([imgs, frame_idx], training=False)
-            loss = self.loss(imgs, predictions)
+            loss = self.loss(target, predictions)
 
             test_loss(loss)
             test_accuracy(target, predictions)
