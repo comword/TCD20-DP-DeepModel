@@ -107,10 +107,10 @@ def dataloader(imgs, frame_idx, label, resize_fac, mean_norm, std_norm, resoluti
     frames = resized
 
     # random crop data augment
+    # TODO: crop algo
     img_shape = frames.shape
     if img_shape[2] != img_shape[3]:
-        frames = random_crop(frames, min(
-            img_shape[2], img_shape[3]) * resize_factor)
+        frames, _ = random_crop(frames, min(img_shape[2], img_shape[3]))
     # if img_shape[2] > self.resolution[0] and img_shape[3] > self.resolution[1]:
     #     pass
 
@@ -120,7 +120,7 @@ def dataloader(imgs, frame_idx, label, resize_fac, mean_norm, std_norm, resoluti
     for n, i in enumerate(frames):
         resized[n, :, :, :] = resize(
             frames[n, :, :, :], resized.shape[1:], anti_aliasing=True)
-    frames = np.transpose(resized, (0, 2, 3, 1))  # F, H, W, C
+    frames = np.transpose(resized, (1, 0, 2, 3))  # C, F, H, W
     return frames, frame_idx, label
 
 
@@ -139,13 +139,13 @@ class FrameDataLoaderTF:
                                                                   Tout=[tf.float32, tf.int32, tf.int32]), num_parallel_calls=8)
         ds = ds.batch(batch_size).prefetch(batch_size)
         if shuffle:
-            ds = ds.shuffle(batch_size)
+            ds = ds.shuffle(batch_size // 3)
         self.full_ds = ds
         if validation_split > 0:
             self.split_validation = True
-            train_size = int((1 - validation_split) * self.__len__())
-            self.train_dataset = ds.take(train_size)
-            self.val_dataset = ds.skip(train_size)
+            self.train_size = int((1 - validation_split) * self.__len__())
+            self.train_dataset = ds.take(self.train_size)
+            self.val_dataset = ds.skip(self.train_size)
         else:
             self.split_validation = False
         self.full_ds = ds
@@ -158,6 +158,18 @@ class FrameDataLoaderTF:
 
     def getSplitDataset(self):
         return self.train_dataset, self.val_dataset
+
+    def getTrainLen(self):
+        if not self.train_size:
+            return self.__len__()
+        else:
+            return self.train_size
+
+    def getValLen(self):
+        if not self.train_size:
+            return 0
+        else:
+            return self.__len__()-self.train_size
 
     def __len__(self):
         return self.loader.__len__() // self.batch_size

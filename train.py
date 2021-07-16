@@ -12,10 +12,7 @@ from utils import init
 
 def main(config):
     data_loader, model = init(config)
-    if data_loader.hasSplitValidation():
-        train_ds, val_ds = data_loader.getSplitDataset()
-
-    trainer = VideoTrainer(model, config, train_ds=train_ds, val_ds=val_ds)
+    trainer = VideoTrainer(model, config, data_loader=data_loader)
     trainer.train()
 
 
