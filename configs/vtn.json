@@ -26,12 +26,13 @@
       }
     },
     "trainer": {
-        "epochs": 100,
+        "epochs": 40,
         "save_period": 10,
         "verbosity": 2,
         "monitor": "max val_accuracy",
-        "early_stop": 15,
-        "tensorboard": false
+        "early_stop": 5,
+        "lr_dmodel": 100,
+        "tensorboard": true
       }
 }
   

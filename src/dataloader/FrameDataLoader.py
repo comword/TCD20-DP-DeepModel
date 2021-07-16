@@ -82,12 +82,6 @@ class FrameDataLoader(tf.keras.utils.Sequence):
             yield self.__getitem__(i)
 
 
-def dataloader_wrapper(imgs, frame_idx, label,
-                       resize_fac=[0.8, 1.2], mean_norm=[0.45, 0.45, 0.45], std_norm=[0.225, 0.225, 0.225]):
-    return tf.py_function(dataloader, inp=[imgs, frame_idx, label, resize_fac, mean_norm, std_norm],
-                          Tout=[tf.float32, tf.int32, tf.int32])
-
-
 def dataloader(imgs, frame_idx, label, resize_fac, mean_norm, std_norm, resolution):
     imgs = imgs.numpy()
     img_shape = cv2.imread(imgs[0].decode("utf-8")).shape  # H, W, C
@@ -102,6 +96,7 @@ def dataloader(imgs, frame_idx, label, resize_fac, mean_norm, std_norm, resoluti
 
     frames = np.transpose(frames, (0, 3, 1, 2))  # F, C, H, W
     frames = color_normalization(frames, mean_norm, std_norm)
+
     # resize data augment
     resize_factor = random.uniform(resize_fac[0], resize_fac[1])
     resized = np.zeros((imgs.shape[0], frames.shape[1], int(
@@ -145,13 +140,23 @@ class FrameDataLoaderTF:
         ds = ds.batch(batch_size).prefetch(batch_size)
         if shuffle:
             ds = ds.shuffle(batch_size)
-        train_size = int((1 - validation_split) * self.__len__())
-        # val_size = int(validation_split * self.__len__())
-        self.train_dataset = ds.take(train_size)
-        self.val_dataset = ds.skip(train_size)
+        self.full_ds = ds
+        if validation_split > 0:
+            self.split_validation = True
+            train_size = int((1 - validation_split) * self.__len__())
+            self.train_dataset = ds.take(train_size)
+            self.val_dataset = ds.skip(train_size)
+        else:
+            self.split_validation = False
         self.full_ds = ds
 
-    def getDataset(self):
+    def hasSplitValidation(self):
+        return self.split_validation
+
+    def getFullDataset(self):
+        return self.full_ds
+
+    def getSplitDataset(self):
         return self.train_dataset, self.val_dataset
 
     def __len__(self):
