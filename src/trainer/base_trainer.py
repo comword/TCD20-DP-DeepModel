@@ -1,3 +1,4 @@
+import json
 from abc import abstractmethod
 from numpy import inf
 from logger import TensorboardWriter
@@ -111,12 +112,12 @@ class BaseTrainer:
         :param save_best: if True, rename the saved checkpoint to 'model_best.pth'
         """
         arch = type(self.model).__name__
-        ckpt = tf.train.Checkpoint(arch=arch,
-                                   epoch=epoch,
+        ckpt = tf.train.Checkpoint(arch=tf.Variable(arch),
+                                   epoch=tf.Variable(epoch),
                                    model=self.model,
                                    optimizer=self.optimizer,
-                                   monitor_best=self.mnt_best,
-                                   config=self.config)
+                                   monitor_best=tf.Variable(self.mnt_best),
+                                   config=tf.Variable(json.dumps(self.config.config)))
 
         if save_best:
             best_path = str(self.checkpoint_dir / 'model_best')
@@ -136,18 +137,20 @@ class BaseTrainer:
         """
         resume_path = str(resume_path)
         self.logger.info("Loading checkpoint: {} ...".format(resume_path))
-        arch = ""
-        epoch = 0
-        config = {}
+        arch = tf.Variable("")
+        epoch = tf.Variable(0)
+        monitor_best = tf.Variable(0.0)
+        config = tf.Variable("")
         ckpt = tf.train.Checkpoint(arch=arch,
                                    epoch=epoch,
                                    model=self.model,
                                    optimizer=self.optimizer,
-                                   monitor_best=self.mnt_best,
+                                   monitor_best=monitor_best,
                                    config=config)
         ckpt.read(resume_path)
-
-        self.start_epoch = epoch + 1
+        config = json.loads(config.numpy().decode("utf-8"))
+        self.mnt_best = float(monitor_best)
+        self.start_epoch = int(epoch) + 1
 
         # load architecture params from checkpoint.
         if config['arch'] != self.config['arch']:

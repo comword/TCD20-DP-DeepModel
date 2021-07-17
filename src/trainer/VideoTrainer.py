@@ -4,7 +4,7 @@ from .base_trainer import BaseTrainer
 
 
 class WarmupSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
-    def __init__(self, d_model, warmup_steps=4000):
+    def __init__(self, d_model, warmup_steps=3000):
         super(WarmupSchedule, self).__init__()
 
         self.d_model = d_model
@@ -32,17 +32,20 @@ class VideoTrainer(BaseTrainer):
             self.do_validation = False
         learning_rate = WarmupSchedule(self.config['trainer']['lr_dmodel'])
         optimizer = tf.keras.optimizers.Adam(learning_rate)
-        self.loss = tf.keras.losses.SparseCategoricalCrossentropy(
-            from_logits=True, reduction='none')
+        self.loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+        self.train_loss = tf.keras.metrics.Mean('train_loss', dtype=tf.float32)
+        self.train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
+            'train_accuracy')
+        self.test_loss = tf.keras.metrics.Mean('val_loss', dtype=tf.float32)
+        self.test_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
+            'val_accuracy')
         super(VideoTrainer, self).__init__(model, config, optimizer)
 
     def _train_epoch(self, epoch):
-        train_loss = tf.keras.metrics.Mean('train_loss', dtype=tf.float32)
-        train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
-            'train_accuracy')
+        self.train_loss.reset_states()
+        self.train_accuracy.reset_states()
         tbar = tqdm(self.train_ds, total=self.data_loader.getTrainLen())
         for batch_idx, (imgs, frame_idx, target) in enumerate(tbar):
-            batch_size = imgs.shape[0]
             with tf.GradientTape() as tape:
                 predictions = self.model([imgs, frame_idx], training=True)
                 loss = self.loss(target, predictions)
@@ -50,17 +53,17 @@ class VideoTrainer(BaseTrainer):
             self.optimizer.apply_gradients(
                 zip(grads, self.model.trainable_variables))
 
-            train_loss(loss)
-            train_accuracy(target, predictions)
-            step_count = (epoch - 1) * batch_size + batch_idx
+            self.train_loss(loss)
+            self.train_accuracy(target, predictions)
+            step_count = (epoch - 1) * self.data_loader.getTrainLen() + batch_idx
             self.writer.set_step(step_count)
-            loss_res = train_loss.result()
-            acc_res = train_accuracy.result()
+            loss_res = self.train_loss.result()
+            acc_res = self.train_accuracy.result()
             self.writer.scalar('train/step_loss', loss_res, step_count)
             self.writer.scalar('train/step_accuracy', acc_res, step_count)
             tbar.set_description('Train loss: %.3f' % loss_res)
-        loss_res = train_loss.result()
-        acc_res = train_accuracy.result()
+        loss_res = self.train_loss.result()
+        acc_res = self.train_accuracy.result()
         self.writer.scalar('train/loss', loss_res, epoch)
         self.writer.scalar('train/accuracy', acc_res, epoch)
 
@@ -74,26 +77,24 @@ class VideoTrainer(BaseTrainer):
         return log
 
     def _valid_epoch(self, epoch):
-        test_loss = tf.keras.metrics.Mean('val_loss', dtype=tf.float32)
-        test_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
-            'val_accuracy')
+        self.test_loss.reset_states()
+        self.test_accuracy.reset_states()
         tbar = tqdm(self.val_ds, total=self.data_loader.getValLen())
         for batch_idx, (imgs, frame_idx, target) in enumerate(tbar):
-            batch_size = imgs.shape[0]
             predictions = self.model([imgs, frame_idx], training=False)
             loss = self.loss(target, predictions)
 
-            test_loss(loss)
-            test_accuracy(target, predictions)
-            step_count = (epoch - 1) * batch_size + batch_idx
+            self.test_loss(loss)
+            self.test_accuracy(target, predictions)
+            step_count = (epoch - 1) * self.data_loader.getValLen() + batch_idx
             self.writer.set_step(step_count, mode='valid')
-            loss_res = test_loss.result()
-            acc_res = test_accuracy.result()
+            loss_res = self.test_loss.result()
+            acc_res = self.test_accuracy.result()
             self.writer.scalar('val/step_loss', loss_res, step_count)
             self.writer.scalar('val/step_accuracy', acc_res, step_count)
             tbar.set_description('Test loss: %.3f' % loss_res)
-        loss_res = test_loss.result()
-        acc_res = test_accuracy.result()
+        loss_res = self.test_loss.result()
+        acc_res = self.test_accuracy.result()
         self.writer.scalar('val/loss', loss_res, epoch)
         self.writer.scalar('val/accuracy', acc_res, epoch)
         return {

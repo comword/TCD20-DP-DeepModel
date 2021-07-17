@@ -13,7 +13,7 @@ from .transform import random_crop, color_normalization
 
 class FrameDataLoader(tf.keras.utils.Sequence):
     @initializer
-    def __init__(self, data_path, batch_frame, batch_second, num_clips=12):
+    def __init__(self, data_path, batch_frame, batch_second, num_clips=12, shuffle=False):
         self.data_path = Path(data_path)
         with open(str(self.data_path / "types.json"), "r") as f:
             self.cls_types = json.load(f)
@@ -78,8 +78,12 @@ class FrameDataLoader(tf.keras.utils.Sequence):
         return frames, frame_idx, label
 
     def __call__(self):
-        for i in range(self.__len__()):
-            yield self.__getitem__(i)
+        if self.shuffle:
+            for i in random.sample(range(self.__len__()), self.__len__()):
+                yield self.__getitem__(i)
+        else:
+            for i in range(self.__len__()):
+                yield self.__getitem__(i)
 
 
 def dataloader(imgs, frame_idx, label, resize_fac, mean_norm, std_norm, resolution):
@@ -132,6 +136,8 @@ class FrameDataLoaderTF:
         self.loader = FrameDataLoader(*args, **kwargs)
         types = (tf.string, tf.int32, tf.int32)
         ds = tf.data.Dataset.from_generator(self.loader, output_types=types)
+        if shuffle:
+            ds = ds.shuffle(batch_size * 10)
         ds = ds.map(lambda imgs, frame_idx, label: tf.py_function(dataloader,
                                                                   inp=[
                                                                       imgs, frame_idx, label, resize_fac,
@@ -139,7 +145,7 @@ class FrameDataLoaderTF:
                                                                   Tout=[tf.float32, tf.int32, tf.int32]), num_parallel_calls=16)
         ds = ds.batch(batch_size)
         if shuffle:
-            ds = ds.shuffle(batch_size // 2)
+            ds = ds.shuffle(batch_size * 2)
         self.full_ds = ds.prefetch(batch_size)
         if validation_split > 0:
             self.split_validation = True

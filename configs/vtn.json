@@ -6,7 +6,13 @@
       "type": "VTNBuilder",
       "args": {
         "backbone": "EfficientNetB0",
-        "n_classes": 16
+        "n_classes": 16,
+        "MLP_DIM": 768,
+        "HIDDEN_DIM": 768,
+        "NUM_ATTENTION_HEADS": 8,
+        "NUM_HIDDEN_LAYERS": 2,
+        "INTERMEDIATE_SIZE": 2048,
+        "MLP_DROPOUT_RATE": 0.5
       }
     },
     "data_loader": {
@@ -15,7 +21,7 @@
         "data_path": "data/anonymisedVideos",
         "batch_size": 3,
         "shuffle": true,
-        "validation_split": 0.1,
+        "validation_split": 0.25,
         "resolution": [224, 224],
         "batch_frame": 15,
         "batch_second": 5,
@@ -26,7 +32,7 @@
       }
     },
     "trainer": {
-        "epochs": 40,
+        "epochs": 50,
         "save_period": 10,
         "verbosity": 2,
         "monitor": "max val_accuracy",
