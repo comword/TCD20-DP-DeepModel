@@ -4,7 +4,7 @@ from .base_trainer import BaseTrainer
 
 
 class WarmupSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
-    def __init__(self, d_model, warmup_steps=3000):
+    def __init__(self, d_model, warmup_steps=4000):
         super(WarmupSchedule, self).__init__()
 
         self.d_model = d_model
@@ -29,6 +29,7 @@ class VideoTrainer(BaseTrainer):
             self.train_ds, self.val_ds = data_loader.getSplitDataset()
             self.do_validation = True
         else:
+            self.train_ds, self.val_ds = data_loader.getFullDataset(), None
             self.do_validation = False
         learning_rate = WarmupSchedule(self.config['trainer']['lr_dmodel'])
         optimizer = tf.keras.optimizers.Adam(learning_rate)

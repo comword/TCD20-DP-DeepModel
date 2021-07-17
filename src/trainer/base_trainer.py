@@ -157,10 +157,5 @@ class BaseTrainer:
             self.logger.warning("Warning: Architecture configuration given in config file is different from that of "
                                 "checkpoint. This may yield an exception while state_dict is being loaded.")
 
-        # load optimizer state from checkpoint only when optimizer type is not changed.
-        if config['optimizer']['type'] != self.config['optimizer']['type']:
-            self.logger.warning(
-                "Warning: Optimizer type given in config file is different from that of checkpoint. ")
-
         self.logger.info(
             "Checkpoint loaded. Resume from epoch {}".format(self.start_epoch))

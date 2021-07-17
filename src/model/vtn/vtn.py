@@ -11,8 +11,7 @@ class VTN(tf.keras.Model):
         self.backbone = getattr(tf.keras.applications, cfg.backbone)(
             include_top=False, weights='imagenet', input_shape=[cfg.input_shape[2], cfg.input_shape[3], cfg.input_shape[0]])
 
-        self.bb_conv = tf.keras.layers.DepthwiseConv2D((3, 3), padding='same')
-        self.bb_conv2 = tf.keras.layers.Conv2D(cfg.HIDDEN_DIM, (1, 1), padding = 'same')
+        self.bb_conv = tf.keras.layers.Conv2D(cfg.HIDDEN_DIM, (1, 1), padding = 'same', activation='gelu')
         self.bb_pooling = tf.keras.layers.GlobalAveragePooling2D()
 
         self.cls_token = tf.Variable(tf.random_normal_initializer(
@@ -46,10 +45,7 @@ class VTN(tf.keras.Model):
         x = tf.transpose(x, perm=[0, 2, 3, 4, 1])  # B, F, H, W, C
         x = tf.reshape(x, (B * F, H, W, C))
         x = self.backbone(x, training=training)
-        residual = x
         x = self.bb_conv(x)
-        x += residual
-        x = self.bb_conv2(x)
         x = self.bb_pooling(x)
         x = tf.reshape(x, (B, F, -1))
 

@@ -11,8 +11,8 @@ from model.vtn import VTNBuilder
 
 model = VTNBuilder()
 
-test = tf.random.uniform((1, 3, 15, 224, 224))   # B, C, F, H, W
-frame_idx = np.arange(0, 1*15).reshape((1, 15))
+test = tf.random.uniform((2, 3, 15, 224, 224))   # B, C, F, H, W
+frame_idx = np.arange(0, 2*15).reshape((2, 15))
 out = model([test, frame_idx])
 print(out.shape)
 model.summary(line_length=400)

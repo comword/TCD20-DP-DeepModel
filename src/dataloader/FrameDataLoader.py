@@ -13,7 +13,7 @@ from .transform import random_crop, color_normalization
 
 class FrameDataLoader(tf.keras.utils.Sequence):
     @initializer
-    def __init__(self, data_path, batch_frame, batch_second, num_clips=12, shuffle=False):
+    def __init__(self, data_path, batch_frame, batch_second, num_clips=12, shuffle=True):
         self.data_path = Path(data_path)
         with open(str(self.data_path / "types.json"), "r") as f:
             self.cls_types = json.load(f)
@@ -47,6 +47,9 @@ class FrameDataLoader(tf.keras.utils.Sequence):
             else:
                 temp_files[k] = files[k]
         self.files = collections.OrderedDict(temp_files)
+        if shuffle:
+            self.shuffle_res = random.sample(
+                range(self.__len__()), self.__len__())
 
     def get_start_end_idx(self, video_size, clip_size, clip_idx, num_clips):
         delta = max(video_size - clip_size, 0)
@@ -79,7 +82,7 @@ class FrameDataLoader(tf.keras.utils.Sequence):
 
     def __call__(self):
         if self.shuffle:
-            for i in random.sample(range(self.__len__()), self.__len__()):
+            for i in self.shuffle_res:
                 yield self.__getitem__(i)
         else:
             for i in range(self.__len__()):
@@ -131,21 +134,17 @@ def dataloader(imgs, frame_idx, label, resize_fac, mean_norm, std_norm, resoluti
 class FrameDataLoaderTF:
 
     def __init__(self, *args, batch_size=15, resolution=[224, 224], resize_fac=[0.8, 1.2],
-                 mean_norm=[0.45, 0.45, 0.45], std_norm=[0.225, 0.225, 0.225], shuffle=False, validation_split=0.1, **kwargs):
+                 mean_norm=[0.45, 0.45, 0.45], std_norm=[0.225, 0.225, 0.225], shuffle=True, validation_split=0.1, **kwargs):
         self.batch_size = batch_size
-        self.loader = FrameDataLoader(*args, **kwargs)
+        self.loader = FrameDataLoader(*args, shuffle=shuffle, **kwargs)
         types = (tf.string, tf.int32, tf.int32)
         ds = tf.data.Dataset.from_generator(self.loader, output_types=types)
-        if shuffle:
-            ds = ds.shuffle(batch_size * 10)
         ds = ds.map(lambda imgs, frame_idx, label: tf.py_function(dataloader,
                                                                   inp=[
                                                                       imgs, frame_idx, label, resize_fac,
                                                                       mean_norm, std_norm, resolution],
                                                                   Tout=[tf.float32, tf.int32, tf.int32]), num_parallel_calls=16)
         ds = ds.batch(batch_size)
-        if shuffle:
-            ds = ds.shuffle(batch_size * 2)
         self.full_ds = ds.prefetch(batch_size)
         if validation_split > 0:
             self.split_validation = True
@@ -166,13 +165,13 @@ class FrameDataLoaderTF:
         return self.train_dataset, self.val_dataset
 
     def getTrainLen(self):
-        if not self.val_size:
+        if not hasattr(self, "val_size"):
             return self.__len__()
         else:
             return self.__len__() - self.val_size
 
     def getValLen(self):
-        if not self.val_size:
+        if not hasattr(self, "val_size"):
             return 0
         else:
             return self.val_size

@@ -7,21 +7,22 @@
       "args": {
         "backbone": "EfficientNetB0",
         "n_classes": 16,
-        "MLP_DIM": 768,
-        "HIDDEN_DIM": 768,
-        "NUM_ATTENTION_HEADS": 8,
+        "MLP_DIM": 500,
+        "HIDDEN_DIM": 500,
+        "NUM_ATTENTION_HEADS": 5,
         "NUM_HIDDEN_LAYERS": 2,
-        "INTERMEDIATE_SIZE": 2048,
-        "MLP_DROPOUT_RATE": 0.5
+        "INTERMEDIATE_SIZE": 1536,
+        "MLP_DROPOUT_RATE": 0.4,
+        "MAX_POSITION_EMBEDDINGS": 288
       }
     },
     "data_loader": {
       "type": "FrameDataLoaderTF",
       "args": {
         "data_path": "data/anonymisedVideos",
-        "batch_size": 3,
+        "batch_size": 6,
         "shuffle": true,
-        "validation_split": 0.25,
+        "validation_split": 0.1,
         "resolution": [224, 224],
         "batch_frame": 15,
         "batch_second": 5,
@@ -36,8 +37,8 @@
         "save_period": 10,
         "verbosity": 2,
         "monitor": "max val_accuracy",
-        "early_stop": 5,
-        "lr_dmodel": 128,
+        "early_stop": 10,
+        "lr_dmodel": 248,
         "tensorboard": true
       }
 }
