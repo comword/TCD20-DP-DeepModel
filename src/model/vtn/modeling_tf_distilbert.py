@@ -74,13 +74,13 @@ class TFEmbeddings(tf.keras.layers.Layer):
         self.dropout = tf.keras.layers.Dropout(rate=config.dropout)
 
     def build(self, input_shape: tf.TensorShape):
-        with tf.name_scope("word_embeddings"):
-            self.weight = self.add_weight(
-                name="weight",
-                shape=[self.vocab_size, self.dim],
-                initializer=get_initializer(
-                    initializer_range=self.initializer_range),
-            )
+        # with tf.name_scope("word_embeddings"):
+        #     self.weight = self.add_weight(
+        #         name="weight",
+        #         shape=[self.vocab_size, self.dim],
+        #         initializer=get_initializer(
+        #             initializer_range=self.initializer_range),
+        #     )
 
         with tf.name_scope("token_type_embeddings"):
             self.token_type_embeddings = self.add_weight(
@@ -108,8 +108,8 @@ class TFEmbeddings(tf.keras.layers.Layer):
         """
         assert not (input_ids is None and inputs_embeds is None)
 
-        if input_ids is not None:
-            inputs_embeds = tf.gather(params=self.weight, indices=input_ids)
+        # if input_ids is not None:
+        #     inputs_embeds = tf.gather(params=self.weight, indices=input_ids)
 
         input_shape = shape_list(inputs_embeds)[:-1]
 

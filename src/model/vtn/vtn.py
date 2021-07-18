@@ -63,7 +63,7 @@ class VTN(tf.keras.Model):
             [tf.shape(x)[1]-1, B]), [[1, 0], [0, 0]], constant_values=1)), tf.int32)
 
         position_ids = tf.pad(position_ids, tf.convert_to_tensor(
-            [[0, 0], [0, 1]]), constant_values=0)
+            [[0, 0], [1, 0]]), constant_values=0)
         position_ids = tf.cast(position_ids, tf.int32)
         mask = tf.cast(tf.not_equal(attention_mask, 0), tf.int32)
         max_position_embeddings = self.temporal_encoder.config.max_position_embeddings

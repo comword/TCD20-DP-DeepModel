@@ -7,9 +7,11 @@ import pandas as pd
 src_dir = os.path.join("src")
 sys.path.insert(0, src_dir)
 
-from model.vtn import VTNBuilder
+from model import VTNBuilder, PlainEffNet
 
 model = VTNBuilder()
+
+# model = PlainEffNet()
 
 test = tf.random.uniform((2, 3, 15, 224, 224))   # B, C, F, H, W
 frame_idx = np.arange(0, 2*15).reshape((2, 15))

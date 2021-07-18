@@ -4,7 +4,7 @@ from .base_trainer import BaseTrainer
 
 
 class WarmupSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
-    def __init__(self, d_model, warmup_steps=4000):
+    def __init__(self, d_model, warmup_steps=2000):
         super(WarmupSchedule, self).__init__()
 
         self.d_model = d_model
@@ -31,9 +31,11 @@ class VideoTrainer(BaseTrainer):
         else:
             self.train_ds, self.val_ds = data_loader.getFullDataset(), None
             self.do_validation = False
-        learning_rate = WarmupSchedule(self.config['trainer']['lr_dmodel'])
+        learning_rate = WarmupSchedule(self.config['trainer']['lr_dmodel'],
+                                       warmup_steps=self.config['trainer']['warmup_steps'])
         optimizer = tf.keras.optimizers.Adam(learning_rate)
-        self.loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+        self.loss = tf.keras.losses.SparseCategoricalCrossentropy(
+            from_logits=True)
         self.train_loss = tf.keras.metrics.Mean('train_loss', dtype=tf.float32)
         self.train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
             'train_accuracy')
@@ -56,7 +58,8 @@ class VideoTrainer(BaseTrainer):
 
             self.train_loss(loss)
             self.train_accuracy(target, predictions)
-            step_count = (epoch - 1) * self.data_loader.getTrainLen() + batch_idx
+            step_count = (epoch - 1) * \
+                self.data_loader.getTrainLen() + batch_idx
             self.writer.set_step(step_count)
             loss_res = self.train_loss.result()
             acc_res = self.train_accuracy.result()

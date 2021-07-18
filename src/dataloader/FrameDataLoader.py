@@ -47,9 +47,6 @@ class FrameDataLoader(tf.keras.utils.Sequence):
             else:
                 temp_files[k] = files[k]
         self.files = collections.OrderedDict(temp_files)
-        if shuffle:
-            self.shuffle_res = random.sample(
-                range(self.__len__()), self.__len__())
 
     def get_start_end_idx(self, video_size, clip_size, clip_idx, num_clips):
         delta = max(video_size - clip_size, 0)
@@ -64,12 +61,13 @@ class FrameDataLoader(tf.keras.utils.Sequence):
         return (len(list(self.files.keys())) * self.num_clips)
 
     def __getitem__(self, idx):
-        vid = list(self.files)[idx // self.num_clips]
+        len_videos = len(list(self.files))
+        vid = list(self.files)[idx % len_videos]
         label = int(self.labels.loc[vid.split('/')[0]]['label'])
         fps = int(self.labels.loc[vid.split('/')[0]]['fps'])
         start_idx, end_idx = self.get_start_end_idx(len(self.files[vid]),
                                                     fps * self.batch_second,
-                                                    idx % self.num_clips,
+                                                    idx // len_videos,
                                                     self.num_clips)
         frame_idx = np.linspace(
             start_idx, end_idx, self.batch_frame).astype(int)
@@ -81,12 +79,8 @@ class FrameDataLoader(tf.keras.utils.Sequence):
         return frames, frame_idx, label
 
     def __call__(self):
-        if self.shuffle:
-            for i in self.shuffle_res:
-                yield self.__getitem__(i)
-        else:
-            for i in range(self.__len__()):
-                yield self.__getitem__(i)
+        for i in range(self.__len__()):
+            yield self.__getitem__(i)
 
 
 def dataloader(imgs, frame_idx, label, resize_fac, mean_norm, std_norm, resolution):
