@@ -7,9 +7,9 @@ import pandas as pd
 src_dir = os.path.join("src")
 sys.path.insert(0, src_dir)
 
-from model import VTNBuilder, PlainEffNet
+from model import VTNBuilder, VTNVITBuilder, PlainEffNet
 
-model = VTNBuilder()
+model = VTNVITBuilder(backbone="vit_b16", HIDDEN_DIM=768, NUM_ATTENTION_HEADS=8)
 
 # model = PlainEffNet()
 

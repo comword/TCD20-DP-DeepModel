@@ -21,3 +21,7 @@ dependencies:
   - seaborn
   - transformers
   - h5py=2.10.0
+  - av
+  - iopath
+  - pip:
+    - tensorflow-addons

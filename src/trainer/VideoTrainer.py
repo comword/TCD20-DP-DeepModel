@@ -1,4 +1,5 @@
 import tensorflow as tf
+import tensorflow_addons as tfa
 from tqdm import tqdm
 from .base_trainer import BaseTrainer
 
@@ -33,7 +34,9 @@ class VideoTrainer(BaseTrainer):
             self.do_validation = False
         learning_rate = WarmupSchedule(self.config['trainer']['lr_dmodel'],
                                        warmup_steps=self.config['trainer']['warmup_steps'])
-        optimizer = tf.keras.optimizers.Adam(learning_rate)
+        # optimizer = tf.keras.optimizers.Adam(learning_rate)
+        optimizer = tfa.optimizers.SGDW(
+            learning_rate=learning_rate, momentum=0.9, weight_decay=1e-4, nesterov=True)
         self.loss = tf.keras.losses.SparseCategoricalCrossentropy(
             from_logits=True)
         self.train_loss = tf.keras.metrics.Mean('train_loss', dtype=tf.float32)

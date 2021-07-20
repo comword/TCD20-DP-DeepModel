@@ -47,6 +47,9 @@ class FrameDataLoader(tf.keras.utils.Sequence):
             else:
                 temp_files[k] = files[k]
         self.files = collections.OrderedDict(temp_files)
+        if shuffle:
+            self.shuffle_res = random.sample(
+                range(self.__len__()), self.__len__())
 
     def get_start_end_idx(self, video_size, clip_size, clip_idx, num_clips):
         delta = max(video_size - clip_size, 0)
@@ -76,11 +79,15 @@ class FrameDataLoader(tf.keras.utils.Sequence):
         frames = []
         for i in frame_idx:
             frames.append(self.files[vid][i][1])
-        return frames, frame_idx, label
+        return frames, frame_idx-np.min(frame_idx), label
 
     def __call__(self):
-        for i in range(self.__len__()):
-            yield self.__getitem__(i)
+        if self.shuffle:
+            for i in self.shuffle_res:
+                yield self.__getitem__(i)
+        else:
+            for i in range(self.__len__()):
+                yield self.__getitem__(i)
 
 
 def dataloader(imgs, frame_idx, label, resize_fac, mean_norm, std_norm, resolution):
@@ -127,10 +134,10 @@ def dataloader(imgs, frame_idx, label, resize_fac, mean_norm, std_norm, resoluti
 
 class FrameDataLoaderTF:
 
-    def __init__(self, *args, batch_size=15, resolution=[224, 224], resize_fac=[0.8, 1.2],
+    def __init__(self, *args, batch_size=15, resolution=[224, 224], resize_fac=[0.8, 1.2], num_clips=12,
                  mean_norm=[0.45, 0.45, 0.45], std_norm=[0.225, 0.225, 0.225], shuffle=True, validation_split=0.1, **kwargs):
         self.batch_size = batch_size
-        self.loader = FrameDataLoader(*args, shuffle=shuffle, **kwargs)
+        self.loader = FrameDataLoader(*args, shuffle=shuffle, num_clips=num_clips, **kwargs)
         types = (tf.string, tf.int32, tf.int32)
         ds = tf.data.Dataset.from_generator(self.loader, output_types=types)
         ds = ds.map(lambda imgs, frame_idx, label: tf.py_function(dataloader,

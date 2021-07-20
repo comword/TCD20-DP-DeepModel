@@ -1,4 +1,5 @@
 import tensorflow as tf
+from vit_keras import vit, utils
 from . import layers
 
 
@@ -8,8 +9,12 @@ class VTN(tf.keras.Model):
 
         self.img_input = tf.keras.layers.Input(cfg.input_shape)
         self.pos_input = tf.keras.layers.Input(cfg.input_shape[1])
-        self.backbone = getattr(tf.keras.applications, cfg.backbone)(
-            include_top=False, weights='imagenet', input_shape=[cfg.input_shape[2], cfg.input_shape[3], cfg.input_shape[0]])
+        if cfg.backbone.startswith("EfficientNet"):
+            self.backbone = getattr(tf.keras.applications, cfg.backbone)(
+                include_top=False, weights='imagenet', input_shape=[cfg.input_shape[2], cfg.input_shape[3], cfg.input_shape[0]])
+        elif cfg.backbone.startswith("vit"):
+            self.backbone = getattr(vit, cfg.backbone)(
+                image_size=False, weights='imagenet', input_shape=[cfg.input_shape[2], cfg.input_shape[3], cfg.input_shape[0]])
 
         self.bb_conv = tf.keras.layers.Conv2D(cfg.HIDDEN_DIM, (1, 1), padding = 'same', activation='gelu')
         self.bb_pooling = tf.keras.layers.GlobalAveragePooling2D()

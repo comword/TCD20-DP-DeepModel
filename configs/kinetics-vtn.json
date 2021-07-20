@@ -5,9 +5,9 @@
     "arch": {
       "type": "VTNBuilder",
       "args": {
-        "backbone": "EfficientNetB3",
+        "backbone": "EfficientNetB0",
         "temporal": "VTNDistilBertLayer",
-        "input_shape": [3, 15, 300, 300],
+        "input_shape": [3, 15, 224, 224],
         "n_classes": 16,
         "MLP_DIM": 400,
         "HIDDEN_DIM": 640,
@@ -25,7 +25,7 @@
         "batch_size": 3,
         "shuffle": true,
         "validation_split": 0.1,
-        "resolution": [300, 300],
+        "resolution": [224, 224],
         "batch_frame": 15,
         "batch_second": 10,
         "num_clips": 20,
