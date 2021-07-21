@@ -11,9 +11,9 @@
         "n_classes": 16,
         "MLP_DIM": 384,
         "HIDDEN_DIM": 384,
-        "NUM_ATTENTION_HEADS": 6,
+        "NUM_ATTENTION_HEADS": 12,
         "NUM_HIDDEN_LAYERS": 3,
-        "INTERMEDIATE_SIZE": 1534,
+        "INTERMEDIATE_SIZE": 2048,
         "MLP_DROPOUT_RATE": 0.4,
         "MAX_POSITION_EMBEDDINGS": 288
       }
@@ -39,7 +39,7 @@
         "verbosity": 2,
         "monitor": "min val_loss",
         "early_stop": 10,
-        "lr_dmodel": 100,
+        "lr_dmodel": 80,
         "warmup_steps": 4000,
         "tensorboard": true
       }
