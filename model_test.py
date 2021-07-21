@@ -7,11 +7,11 @@ import pandas as pd
 src_dir = os.path.join("src")
 sys.path.insert(0, src_dir)
 
-from model import EffNetBiGru
+from model import VTNBuilder
 
 # model = VTNVITBuilder(backbone="vit_b16", HIDDEN_DIM=768, NUM_ATTENTION_HEADS=8)
 
-model = EffNetBiGru()
+model = VTNBuilder(temporal="VTNLongformerLayer")
 
 test = tf.random.uniform((2, 3, 15, 224, 224))   # B, C, F, H, W
 frame_idx = np.arange(0, 2*15).reshape((2, 15))
@@ -51,7 +51,7 @@ converter = tf.lite.TFLiteConverter.from_keras_model(model)
 converter.optimizations = [tf.lite.Optimize.DEFAULT]
 # converter.target_spec.supported_types = [tf.float16]
 converter.experimental_new_converter = True
-# converter.allow_custom_ops = True
+converter.allow_custom_ops = True
 converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS,
                                        tf.lite.OpsSet.SELECT_TF_OPS]
 tflite_model = converter.convert()

@@ -108,8 +108,24 @@ class VideoTrainer(BaseTrainer):
             'accuracy': acc_res
         }
 
-    # TODO: full test
     def test(self):
         self.test_loss.reset_states()
         self.test_accuracy.reset_states()
+        tbar = tqdm(self.val_ds, total=self.data_loader.getValLen())
+        logit = []
+        gTruth = []
+        for batch_idx, (imgs, frame_idx, target) in enumerate(tbar):
+            predictions = self.model([imgs, frame_idx], training=False)
+            loss = self.loss(target, predictions)
+            gTruth.append(target)
+            logit.append(predictions)
+            self.test_loss(loss)
+            self.test_accuracy(target, predictions)
+            tbar.set_description('Loss: %.3f' % self.test_loss.result())
         
+        loss_res = self.test_loss.result()
+        acc_res = self.test_accuracy.result()
+        return {
+            'loss': loss_res,
+            'accuracy': acc_res
+        }, logit, gTruth

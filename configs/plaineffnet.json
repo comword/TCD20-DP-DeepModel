@@ -22,9 +22,7 @@
         "batch_frame": 15,
         "batch_second": 5,
         "num_clips": 12,
-        "resize_to": [256, 320],
-        "mean_norm": [0.45, 0.45, 0.45],
-        "std_norm": [0.225, 0.225, 0.225]
+        "resize_to": [256, 320]
       }
     },
     "trainer": {

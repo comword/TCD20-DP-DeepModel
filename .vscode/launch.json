@@ -37,8 +37,20 @@
       "console": "integratedTerminal",
       "args": [
         "-c",
-        "configs/effnetbigru.json"
+        "configs/vtn.json"
       ]
+    },
+    {
+      "name": "Python: Eval",
+      "type": "python",
+      "request": "launch",
+      "program": "eval.py",
+      "console": "integratedTerminal",
+      "args": [
+        "-r",
+        "saved/model_best"
+      ],
+      "justMyCode": false
     }
   ]
 }

@@ -1,6 +1,6 @@
 import tensorflow as tf
 from . import layers
-
+from .. import efficientnet
 
 class VTN(tf.keras.Model):
     def __init__(self, cfg, **kwargs):
@@ -8,11 +8,12 @@ class VTN(tf.keras.Model):
 
         self.img_input = tf.keras.layers.Input(cfg.input_shape)
         self.pos_input = tf.keras.layers.Input(cfg.input_shape[1])
-        self.backbone = getattr(tf.keras.applications, cfg.backbone)(
-            include_top=False, weights='imagenet', input_shape=[cfg.input_shape[2], cfg.input_shape[3], cfg.input_shape[0]])
+        self.backbone = getattr(efficientnet, cfg.backbone)(
+            include_top=False, weights='imagenet', top_conv_dim=cfg.HIDDEN_DIM,
+            input_shape=[cfg.input_shape[2], cfg.input_shape[3], cfg.input_shape[0]])
 
-        self.bb_conv = tf.keras.layers.Conv2D(cfg.HIDDEN_DIM, (1, 1), padding = 'same', activation='relu')
-        self.bb_pooling = tf.keras.layers.GlobalAveragePooling2D()
+        self.bb_norm = tf.keras.layers.LayerNormalization(epsilon=1e-6)
+        self.bb_pooling = tf.keras.layers.GlobalMaxPooling2D()
 
         self.cls_token = tf.Variable(tf.random_normal_initializer(
             mean=0., stddev=1.)(shape=[1, 1, cfg.HIDDEN_DIM]))
@@ -23,6 +24,7 @@ class VTN(tf.keras.Model):
             num_attention_heads=cfg.NUM_ATTENTION_HEADS,
             num_hidden_layers=cfg.NUM_HIDDEN_LAYERS,
             pad_token_id=cfg.PAD_TOKEN_ID,
+            attention_window=cfg.ATTENTION_WINDOW,
             intermediate_size=cfg.INTERMEDIATE_SIZE,
             attention_probs_dropout_prob=cfg.ATTENTION_PROBS_DROPOUT_PROB,
             hidden_dropout_prob=cfg.HIDDEN_DROPOUT_PROB)
@@ -34,10 +36,10 @@ class VTN(tf.keras.Model):
         self.mlp_output = tf.keras.layers.Dense(
             cfg.n_classes, activation='softmax')
 
-        self.out = self.call([self.img_input, self.pos_input])
+        # self.out = self.call([self.img_input, self.pos_input])
 
-        super(VTN, self).__init__(
-            inputs=[self.img_input, self.pos_input], outputs=self.out, **kwargs)
+        # super(VTN, self).__init__(
+        #     inputs=[self.img_input, self.pos_input], outputs=self.out, **kwargs)
 
     def call(self, x, training=False):
         x, position_ids = x
@@ -46,7 +48,7 @@ class VTN(tf.keras.Model):
         x = tf.transpose(x, perm=[0, 2, 3, 4, 1])  # B, F, H, W, C
         x = tf.reshape(x, (B * F, H, W, C))
         x = self.backbone(x, training=training)
-        x = self.bb_conv(x)
+        x = self.bb_norm(x)
         x = self.bb_pooling(x)
         x = tf.reshape(x, (B, F, -1))
 
@@ -60,11 +62,17 @@ class VTN(tf.keras.Model):
         attention_mask = tf.where(
             tf.cast(tf.transpose(tf.pad(tf.zeros([D, B]), [[1, 0], [0, 0]], constant_values=True)),
                     tf.bool), 2., attention_mask)
+        x, attention_mask, position_ids = layers.pad_to_window_size_local(
+            x,
+            attention_mask,
+            position_ids,
+            self.temporal_encoder.config.attention_window[0],
+            self.temporal_encoder.config.pad_token_id)
         token_type_ids = tf.cast(tf.transpose(tf.pad(tf.zeros(
             [tf.shape(x)[1]-1, B]), [[1, 0], [0, 0]], constant_values=1)), tf.int32)
 
-        position_ids = tf.pad(position_ids, tf.convert_to_tensor(
-            [[0, 0], [1, 0]]), constant_values=0)
+        # position_ids = tf.pad(position_ids, tf.convert_to_tensor(
+        #     [[0, 0], [1, 0]]), constant_values=0)
         position_ids = tf.cast(position_ids, tf.int32)
         mask = tf.cast(tf.not_equal(attention_mask, 0), tf.int32)
         max_position_embeddings = self.temporal_encoder.config.max_position_embeddings

@@ -13,8 +13,7 @@ class VideoDataLoader(tf.keras.utils.Sequence):
 
     @initializer
     def __init__(self, data_path, batch_frame, sampling_rate, mode="train",
-                 resize_to=[256, 320], resolution=224, mean_norm=[0.45, 0.45, 0.45],
-                 std_norm=[0.225, 0.225, 0.225], num_clips=5, shuffle=True):
+                 resize_to=[256, 320], resolution=224, num_clips=5, shuffle=True):
         self._video_meta = {}
         self._num_retries = 10
         self._num_clips = num_clips
@@ -172,15 +171,11 @@ class VideoDataLoader(tf.keras.utils.Sequence):
                     index = random.randint(0, len(self._path_to_videos) - 1)
                 continue
 
-            # Perform color normalization.
-            # frames = utils.tensor_normalize(
-            #     frames, self.cfg.DATA.MEAN, self.cfg.DATA.STD
-            # )
-            frames = frames / 255.0
-            frames = np.transpose(frames, (0, 3, 1, 2))  # F, C, H, W
-            frames = transform.color_normalization(
-                frames, self.mean_norm, self.std_norm)
-            frames = np.transpose(frames, (0, 2, 3, 1))  # F, H, W, C
+            # frames = frames / 255.0
+            # frames = np.transpose(frames, (0, 3, 1, 2))  # F, C, H, W
+            # frames = transform.color_normalization(
+            #     frames, self.mean_norm, self.std_norm)
+            # frames = np.transpose(frames, (0, 2, 3, 1))  # F, H, W, C
             # Perform data augmentation.
             frames = self.spatial_sampling(
                 frames,
@@ -272,24 +267,24 @@ class VideoDataLoader(tf.keras.utils.Sequence):
 
 class VideoDataLoaderTF:
 
-    def __init__(self, *args, batch_size=15, resolution=224, resize_to=[256, 320], num_clips=5, mode='splitted',
-                 mean_norm=[0.45, 0.45, 0.45], std_norm=[0.225, 0.225, 0.225], shuffle=True, validation_split=0.1, **kwargs):
+    def __init__(self, *args, batch_size=15, resolution=224, resize_to=[256, 320],
+                 num_clips=5, mode='splitted', shuffle=True, validation_split=0.1, **kwargs):
         self.batch_size = batch_size
         self.mode = mode
         types = (tf.float32, tf.int32, tf.int32)
         if mode == 'splitted':
             self.split_validation = True
             self.train_loader = VideoDataLoader(*args, resolution=resolution, resize_to=resize_to, num_clips=num_clips,
-                                                mean_norm=mean_norm, std_norm=std_norm, mode="train", shuffle=shuffle, **kwargs)
+                                                mode="train", shuffle=shuffle, **kwargs)
             self.train_ds = tf.data.Dataset.from_generator(
                 self.train_loader, output_types=types).batch(batch_size).prefetch(batch_size)
             self.val_loader = VideoDataLoader(*args, resolution=resolution, resize_to=resize_to, num_clips=num_clips,
-                                              mean_norm=mean_norm, std_norm=std_norm, mode="val", shuffle=shuffle, **kwargs)
+                                              mode="val", shuffle=shuffle, **kwargs)
             self.val_ds = tf.data.Dataset.from_generator(
                 self.val_loader, output_types=types).batch(batch_size).prefetch(batch_size)
         elif mode == 'all':
             self.all_loader = VideoDataLoader(*args, resolution=resolution, resize_to=resize_to, num_clips=num_clips,
-                                              mean_norm=mean_norm, std_norm=std_norm, mode="all", shuffle=shuffle, **kwargs)
+                                              mode="all", shuffle=shuffle, **kwargs)
             self.all_ds = tf.data.Dataset.from_generator(
                 self.all_loader, output_types=types)
             if validation_split > 0:
@@ -298,7 +293,8 @@ class VideoDataLoaderTF:
                                     self.all_loader.__len__())
                 self.train_ds = self.all_ds.skip(self.val_size).batch(
                     batch_size).prefetch(batch_size)
-                self.val_ds = self.all_ds.take(self.val_size)
+                self.val_ds = self.all_ds.take(self.val_size).batch(
+                    batch_size).prefetch(batch_size)
             else:
                 self.split_validation = False
                 self.val_size = 0

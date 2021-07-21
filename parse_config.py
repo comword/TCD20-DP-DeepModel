@@ -9,7 +9,7 @@ src_dir = os.path.join("src")
 sys.path.insert(0, src_dir)
 
 from logger import setup_logging
-from utils import read_json, write_json
+from utils import read_json, write_json, DotDict
 
 
 class ConfigParser:
@@ -63,7 +63,7 @@ class ConfigParser:
         """
         for opt in options:
             args.add_argument(*opt.flags, default=None, type=opt.type)
-        if not isinstance(args, tuple):
+        if not isinstance(args, tuple) and not isinstance(args, DotDict):
             args = args.parse_args()
 
         if args.device is not None:
@@ -71,6 +71,8 @@ class ConfigParser:
         if args.resume is not None:
             resume = Path(args.resume)
             cfg_fname = resume.parent / 'config.json'
+            if not hasattr(args, "config"):
+                args.config=None
         else:
             msg_no_cfg = "Configuration file need to be specified. Add '-c config.json', for example."
             assert args.config is not None, msg_no_cfg

@@ -1,1 +1,1 @@
-from .builder import VTNBuilder, VTNVITBuilder
+from .builder import VTNBuilder

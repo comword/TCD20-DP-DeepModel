@@ -89,7 +89,7 @@ class FrameDataLoader(tf.keras.utils.Sequence):
                 yield self.__getitem__(i)
 
 
-def dataloader(imgs, frame_idx, label, resize_to, mean_norm, std_norm, resolution, mode='train'):
+def dataloader(imgs, frame_idx, label, resize_to, resolution, mode='train'):
     imgs = imgs.numpy()
     img_shape = cv2.imread(imgs[0].decode("utf-8")).shape  # H, W, C
     frames = np.zeros(
@@ -101,16 +101,12 @@ def dataloader(imgs, frame_idx, label, resize_to, mean_norm, std_norm, resolutio
         frames[fid] = rgb_data
         fid += 1
 
-    frames = np.transpose(frames, (0, 3, 1, 2))  # F, C, H, W
-    frames = transform.color_normalization(frames, mean_norm, std_norm)
-    frames = np.transpose(frames, (0, 2, 3, 1))  # F, H, W, C
-    # resize data augment
     if mode == 'train':
         frames, _ = transform.random_short_side_scale_jitter_list(
-                images=frames,
-                min_size=resize_to[0],
-                max_size=resize_to[1]
-            )
+            images=frames,
+            min_size=resize_to[0],
+            max_size=resize_to[1]
+        )
         frames = np.transpose(np.asarray(frames), (0, 3, 1, 2))  # F, C, H, W
         frames, _ = transform.random_crop(frames, resolution)
         frames = transform.horizontal_flip(0.5, frames, order="CHW")
@@ -122,15 +118,15 @@ def dataloader(imgs, frame_idx, label, resize_to, mean_norm, std_norm, resolutio
         # FHWC
         frames = np.transpose(np.asarray(frames), (0, 3, 1, 2))  # F, C, H, W
         frames, _ = transform.uniform_crop(frames, resolution, 1)
-        frames = np.transpose(frames, (1, 0, 2, 3)) # C, F, H, W
-    
+        frames = np.transpose(frames, (1, 0, 2, 3))  # C, F, H, W
+
     return frames, frame_idx, label
 
 
 class FrameDataLoaderTF:
 
-    def __init__(self, *args, batch_size=15, resolution=224, resize_to=[0.8, 1.2], num_clips=12,
-                 mean_norm=[0.45, 0.45, 0.45], std_norm=[0.225, 0.225, 0.225], shuffle=True, validation_split=0.1, **kwargs):
+    def __init__(self, *args, batch_size=15, resolution=224, resize_to=[0.8, 1.2],
+                 num_clips=12, shuffle=True, validation_split=0.1, **kwargs):
         self.batch_size = batch_size
         self.loader = FrameDataLoader(
             *args, shuffle=shuffle, num_clips=num_clips, **kwargs)
@@ -142,13 +138,11 @@ class FrameDataLoaderTF:
             self.val_size = int(validation_split * self.loader.__len__())
             self.train_dataset = ds.skip(self.val_size).map(lambda imgs, frame_idx, label: tf.py_function(dataloader,
                                                                                                           inp=[
-                                                                                                              imgs, frame_idx, label, resize_to,
-                                                                                                              mean_norm, std_norm, resolution, 'train'],
+                                                                                                              imgs, frame_idx, label, resize_to, resolution, 'train'],
                                                                                                           Tout=[tf.float32, tf.int32, tf.int32]), num_parallel_calls=16).batch(batch_size).prefetch(batch_size)
             self.val_dataset = ds.take(self.val_size).map(lambda imgs, frame_idx, label: tf.py_function(dataloader,
                                                                                                         inp=[
-                                                                                                            imgs, frame_idx, label, resize_to,
-                                                                                                            mean_norm, std_norm, resolution, 'val'],
+                                                                                                            imgs, frame_idx, label, resize_to, resolution, 'val'],
                                                                                                         Tout=[tf.float32, tf.int32, tf.int32]), num_parallel_calls=16).batch(batch_size).prefetch(batch_size)
         else:
             self.split_validation = False
@@ -158,7 +152,6 @@ class FrameDataLoaderTF:
                                                                                           imgs, frame_idx, label, resize_to,
                                                                                           mean_norm, std_norm, resolution, 'train'],
                                                                                       Tout=[tf.float32, tf.int32, tf.int32]), num_parallel_calls=16).batch(batch_size).prefetch(batch_size)
-
 
     def hasSplitValidation(self):
         return self.split_validation

@@ -5,23 +5,34 @@ import argparse
 
 src_dir = os.path.join("src")
 sys.path.insert(0, src_dir)
-from trainer import VideoTrainer
-from utils import init
+
 from parse_config import ConfigParser
+from utils import init
+from trainer import VideoTrainer
+
+
+def update(d, u):
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
 
 
 def main(config: ConfigParser):
-    config.config.update({
-        "data_loader":{
+    update(config.config, {
+        "data_loader": {
             "args": {
-                "validation_split": 0.0,
-                "shuffle": False
+                "validation_split": 0.5,
+                "shuffle": True,
+                "batch_size": 1
             }
         }
     })
     data_loader, model = init(config)
     trainer = VideoTrainer(model, config, data_loader=data_loader)
-    trainer.test()
+    results, logit, gTruth = trainer.test()
 
 
 if __name__ == '__main__':
