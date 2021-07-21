@@ -5,31 +5,32 @@
     "arch": {
       "type": "VTNBuilder",
       "args": {
-        "backbone": "EfficientNetB3",
+        "backbone": "EfficientNetB0",
         "temporal": "VTNDistilBertLayer",
-        "input_shape": [3, 15, 300, 300],
+        "input_shape": [3, 15, 224, 224],
         "n_classes": 16,
-        "MLP_DIM": 400,
-        "HIDDEN_DIM": 640,
-        "NUM_ATTENTION_HEADS": 5,
+        "MLP_DIM": 768,
+        "HIDDEN_DIM": 768,
+        "NUM_ATTENTION_HEADS": 12,
         "NUM_HIDDEN_LAYERS": 3,
-        "INTERMEDIATE_SIZE": 2048,
+        "INTERMEDIATE_SIZE": 3072,
         "MLP_DROPOUT_RATE": 0.4,
         "MAX_POSITION_EMBEDDINGS": 288
       }
     },
     "data_loader": {
-      "type": "FrameDataLoaderTF",
+      "type": "VideoDataLoaderTF",
       "args": {
-        "data_path": "data/anonymisedVideos",
+        "data_path": "data/orig-front-videos",
+        "mode": "all",
         "batch_size": 3,
         "shuffle": true,
         "validation_split": 0.1,
-        "resolution": [300, 300],
+        "resolution": 224,
         "batch_frame": 15,
-        "batch_second": 10,
-        "num_clips": 20,
-        "resize_fac": [0.8, 1.2],
+        "sampling_rate": 8,
+        "num_clips": 8,
+        "resize_to": [256, 340],
         "mean_norm": [0.45, 0.45, 0.45],
         "std_norm": [0.225, 0.225, 0.225]
       }
@@ -40,8 +41,8 @@
         "verbosity": 2,
         "monitor": "max val_accuracy",
         "early_stop": 10,
-        "lr_dmodel": 256,
-        "warmup_steps": 3000,
+        "lr_dmodel": 200,
+        "warmup_steps": 2000,
         "tensorboard": true
       }
 }

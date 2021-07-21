@@ -1,5 +1,4 @@
 import tensorflow as tf
-from vit_keras import vit, utils
 from . import layers
 
 
@@ -9,14 +8,10 @@ class VTN(tf.keras.Model):
 
         self.img_input = tf.keras.layers.Input(cfg.input_shape)
         self.pos_input = tf.keras.layers.Input(cfg.input_shape[1])
-        if cfg.backbone.startswith("EfficientNet"):
-            self.backbone = getattr(tf.keras.applications, cfg.backbone)(
-                include_top=False, weights='imagenet', input_shape=[cfg.input_shape[2], cfg.input_shape[3], cfg.input_shape[0]])
-        elif cfg.backbone.startswith("vit"):
-            self.backbone = getattr(vit, cfg.backbone)(
-                image_size=False, weights='imagenet', input_shape=[cfg.input_shape[2], cfg.input_shape[3], cfg.input_shape[0]])
+        self.backbone = getattr(tf.keras.applications, cfg.backbone)(
+            include_top=False, weights='imagenet', input_shape=[cfg.input_shape[2], cfg.input_shape[3], cfg.input_shape[0]])
 
-        self.bb_conv = tf.keras.layers.Conv2D(cfg.HIDDEN_DIM, (1, 1), padding = 'same', activation='gelu')
+        self.bb_conv = tf.keras.layers.Conv2D(cfg.HIDDEN_DIM, (1, 1), padding = 'same', activation='relu')
         self.bb_pooling = tf.keras.layers.GlobalAveragePooling2D()
 
         self.cls_token = tf.Variable(tf.random_normal_initializer(
@@ -32,6 +27,7 @@ class VTN(tf.keras.Model):
             attention_probs_dropout_prob=cfg.ATTENTION_PROBS_DROPOUT_PROB,
             hidden_dropout_prob=cfg.HIDDEN_DROPOUT_PROB)
 
+        self.mlp_norm = tf.keras.layers.LayerNormalization()
         self.mlp_dense = tf.keras.layers.Dense(
             units=cfg.MLP_DIM, activation='gelu')
         self.mlp_dropout = tf.keras.layers.Dropout(cfg.MLP_DROPOUT_RATE)
@@ -91,7 +87,8 @@ class VTN(tf.keras.Model):
                                   return_dict=None,
                                   training=training)
         x = x["last_hidden_state"]
-        x = self.mlp_dense(x[:, 0])
+        x = self.mlp_norm(x[:, 0])
+        x = self.mlp_dense(x)
         x = self.mlp_dropout(x, training=training)
         x = self.mlp_output(x)
         return x

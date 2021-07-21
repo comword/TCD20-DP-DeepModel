@@ -28,6 +28,17 @@
         "-o",
         "data/anonymisedVideos",
       ]
+    },
+    {
+      "name": "Python: Train",
+      "type": "python",
+      "request": "launch",
+      "program": "train.py",
+      "console": "integratedTerminal",
+      "args": [
+        "-c",
+        "configs/effnetbigru.json"
+      ]
     }
   ]
 }

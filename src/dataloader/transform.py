@@ -143,7 +143,7 @@ def random_short_side_scale_jitter_list(images, min_size, max_size, boxes=None):
         (ndarray or None): the scaled boxes with dimension of
             `num boxes` x 4.
     """
-    size = int(round(1.0 / np.random.uniform(1.0 / max_size, 1.0 / min_size)))
+    size = int(round(1 / np.random.uniform(1 / max_size, 1 / min_size)))
 
     height = images[0].shape[0]
     width = images[0].shape[1]

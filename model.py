@@ -7,11 +7,11 @@ import pandas as pd
 src_dir = os.path.join("src")
 sys.path.insert(0, src_dir)
 
-from model import VTNBuilder, VTNVITBuilder, PlainEffNet
+from model import EffNetBiGru
 
-model = VTNVITBuilder(backbone="vit_b16", HIDDEN_DIM=768, NUM_ATTENTION_HEADS=8)
+# model = VTNVITBuilder(backbone="vit_b16", HIDDEN_DIM=768, NUM_ATTENTION_HEADS=8)
 
-# model = PlainEffNet()
+model = EffNetBiGru()
 
 test = tf.random.uniform((2, 3, 15, 224, 224))   # B, C, F, H, W
 frame_idx = np.arange(0, 2*15).reshape((2, 15))

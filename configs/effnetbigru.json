@@ -1,34 +1,30 @@
 {
-    "name": "Kinetics",
+    "name": "DP_Posture-RNN",
     "n_gpu": 1,
     "save_dir": "saved/",
     "arch": {
-      "type": "VTNBuilder",
+      "type": "EffNetBiGru",
       "args": {
         "backbone": "EfficientNetB0",
-        "temporal": "VTNDistilBertLayer",
         "input_shape": [3, 15, 224, 224],
         "n_classes": 16,
+        "RNN_UNIT": 768,
         "MLP_DIM": 768,
-        "HIDDEN_DIM": 768,
-        "NUM_ATTENTION_HEADS": 12,
-        "NUM_HIDDEN_LAYERS": 3,
-        "INTERMEDIATE_SIZE": 3072,
-        "MLP_DROPOUT_RATE": 0.3,
-        "MAX_POSITION_EMBEDDINGS": 288
+        "HIDDEN_DROPOUT": 0.2,
+        "MLP_DROPOUT_RATE": 0.4
       }
     },
     "data_loader": {
-      "type": "VideoDataLoaderTF",
+      "type": "FrameDataLoaderTF",
       "args": {
-        "data_path": "data/Kinetics_small",
-        "batch_size": 6,
+        "data_path": "data/anonymisedVideos",
+        "batch_size": 3,
         "shuffle": true,
         "validation_split": 0.1,
         "resolution": 224,
         "batch_frame": 15,
-        "sampling_rate": 10,
-        "num_clips": 5,
+        "batch_second": 10,
+        "num_clips": 10,
         "resize_to": [256, 320],
         "mean_norm": [0.45, 0.45, 0.45],
         "std_norm": [0.225, 0.225, 0.225]
@@ -40,8 +36,8 @@
         "verbosity": 2,
         "monitor": "max val_accuracy",
         "early_stop": 10,
-        "lr_dmodel": 256,
-        "warmup_steps": 3000,
+        "lr_dmodel": 150,
+        "warmup_steps": 2000,
         "tensorboard": true
       }
 }

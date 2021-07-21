@@ -2,15 +2,23 @@ import collections
 import os
 import sys
 import argparse
-from parse_config import ConfigParser
 
 src_dir = os.path.join("src")
 sys.path.insert(0, src_dir)
 from trainer import VideoTrainer
 from utils import init
+from parse_config import ConfigParser
 
 
-def main(config):
+def main(config: ConfigParser):
+    config.config.update({
+        "data_loader":{
+            "args": {
+                "validation_split": 0.0,
+                "shuffle": False
+            }
+        }
+    })
     data_loader, model = init(config)
     trainer = VideoTrainer(model, config, data_loader=data_loader)
     trainer.test()

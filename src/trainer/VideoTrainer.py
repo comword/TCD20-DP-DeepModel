@@ -37,8 +37,7 @@ class VideoTrainer(BaseTrainer):
         # optimizer = tf.keras.optimizers.Adam(learning_rate)
         optimizer = tfa.optimizers.SGDW(
             learning_rate=learning_rate, momentum=0.9, weight_decay=1e-4, nesterov=True)
-        self.loss = tf.keras.losses.SparseCategoricalCrossentropy(
-            from_logits=True)
+        self.loss = tf.keras.losses.SparseCategoricalCrossentropy()
         self.train_loss = tf.keras.metrics.Mean('train_loss', dtype=tf.float32)
         self.train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(
             'train_accuracy')
@@ -111,4 +110,6 @@ class VideoTrainer(BaseTrainer):
 
     # TODO: full test
     def test(self):
-        pass
+        self.test_loss.reset_states()
+        self.test_accuracy.reset_states()
+        

@@ -1,5 +1,5 @@
 import tensorflow as tf
-from vit_keras import vit, utils
+from vit_keras import vit
 from . import layers
 
 

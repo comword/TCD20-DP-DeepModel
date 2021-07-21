@@ -7,8 +7,7 @@ import numpy as np
 import tensorflow as tf
 from pathlib import Path
 from utils import initializer
-from skimage.transform import resize
-from .transform import random_crop, color_normalization
+from . import transform
 
 
 class FrameDataLoader(tf.keras.utils.Sequence):
@@ -90,7 +89,7 @@ class FrameDataLoader(tf.keras.utils.Sequence):
                 yield self.__getitem__(i)
 
 
-def dataloader(imgs, frame_idx, label, resize_fac, mean_norm, std_norm, resolution):
+def dataloader(imgs, frame_idx, label, resize_to, mean_norm, std_norm, resolution, mode='train'):
     imgs = imgs.numpy()
     img_shape = cv2.imread(imgs[0].decode("utf-8")).shape  # H, W, C
     frames = np.zeros(
@@ -103,79 +102,75 @@ def dataloader(imgs, frame_idx, label, resize_fac, mean_norm, std_norm, resoluti
         fid += 1
 
     frames = np.transpose(frames, (0, 3, 1, 2))  # F, C, H, W
-    frames = color_normalization(frames, mean_norm, std_norm)
-
+    frames = transform.color_normalization(frames, mean_norm, std_norm)
+    frames = np.transpose(frames, (0, 2, 3, 1))  # F, H, W, C
     # resize data augment
-    resize_factor = random.uniform(resize_fac[0], resize_fac[1])
-    resized = np.zeros((imgs.shape[0], frames.shape[1], int(
-        frames.shape[2]*resize_factor), int(frames.shape[3]*resize_factor)))
-    for n, i in enumerate(frames):
-        resized[n, :, :, :] = resize(
-            frames[n, :, :, :], resized.shape[1:], anti_aliasing=True)
-    frames = resized
-
-    # random crop data augment
-    # TODO: crop algo
-    img_shape = frames.shape
-    if img_shape[2] != img_shape[3]:
-        frames, _ = random_crop(frames, min(img_shape[2], img_shape[3]))
-    # if img_shape[2] > self.resolution[0] and img_shape[3] > self.resolution[1]:
-    #     pass
-
-    # final resize
-    resized = np.zeros(
-        (imgs.shape[0], frames.shape[1], resolution[0], resolution[1]))
-    for n, i in enumerate(frames):
-        resized[n, :, :, :] = resize(
-            frames[n, :, :, :], resized.shape[1:], anti_aliasing=True)
-    frames = np.transpose(resized, (1, 0, 2, 3))  # C, F, H, W
+    if mode == 'train':
+        frames, _ = transform.random_short_side_scale_jitter_list(
+                images=frames,
+                min_size=resize_to[0],
+                max_size=resize_to[1]
+            )
+        frames = np.transpose(np.asarray(frames), (0, 3, 1, 2))  # F, C, H, W
+        frames, _ = transform.random_crop(frames, resolution)
+        frames = transform.horizontal_flip(0.5, frames, order="CHW")
+        frames = np.transpose(frames, (1, 0, 2, 3))  # C, F, H, W
+    else:
+        frames, _ = transform.random_short_side_scale_jitter_list(
+            frames, resolution, resolution
+        )
+        # FHWC
+        frames = np.transpose(np.asarray(frames), (0, 3, 1, 2))  # F, C, H, W
+        frames, _ = transform.uniform_crop(frames, resolution, 1)
+        frames = np.transpose(frames, (1, 0, 2, 3)) # C, F, H, W
+    
     return frames, frame_idx, label
 
 
 class FrameDataLoaderTF:
 
-    def __init__(self, *args, batch_size=15, resolution=[224, 224], resize_fac=[0.8, 1.2], num_clips=12,
+    def __init__(self, *args, batch_size=15, resolution=224, resize_to=[0.8, 1.2], num_clips=12,
                  mean_norm=[0.45, 0.45, 0.45], std_norm=[0.225, 0.225, 0.225], shuffle=True, validation_split=0.1, **kwargs):
         self.batch_size = batch_size
-        self.loader = FrameDataLoader(*args, shuffle=shuffle, num_clips=num_clips, **kwargs)
+        self.loader = FrameDataLoader(
+            *args, shuffle=shuffle, num_clips=num_clips, **kwargs)
         types = (tf.string, tf.int32, tf.int32)
         ds = tf.data.Dataset.from_generator(self.loader, output_types=types)
-        ds = ds.map(lambda imgs, frame_idx, label: tf.py_function(dataloader,
-                                                                  inp=[
-                                                                      imgs, frame_idx, label, resize_fac,
-                                                                      mean_norm, std_norm, resolution],
-                                                                  Tout=[tf.float32, tf.int32, tf.int32]), num_parallel_calls=16)
-        ds = ds.batch(batch_size)
-        self.full_ds = ds.prefetch(batch_size)
+        self.ds = ds
         if validation_split > 0:
             self.split_validation = True
-            self.val_size = int(validation_split * self.__len__())
-            self.train_dataset = ds.skip(self.val_size)
-            self.val_dataset = ds.take(self.val_size)
+            self.val_size = int(validation_split * self.loader.__len__())
+            self.train_dataset = ds.skip(self.val_size).map(lambda imgs, frame_idx, label: tf.py_function(dataloader,
+                                                                                                          inp=[
+                                                                                                              imgs, frame_idx, label, resize_to,
+                                                                                                              mean_norm, std_norm, resolution, 'train'],
+                                                                                                          Tout=[tf.float32, tf.int32, tf.int32]), num_parallel_calls=16).batch(batch_size).prefetch(batch_size)
+            self.val_dataset = ds.take(self.val_size).map(lambda imgs, frame_idx, label: tf.py_function(dataloader,
+                                                                                                        inp=[
+                                                                                                            imgs, frame_idx, label, resize_to,
+                                                                                                            mean_norm, std_norm, resolution, 'val'],
+                                                                                                        Tout=[tf.float32, tf.int32, tf.int32]), num_parallel_calls=16).batch(batch_size).prefetch(batch_size)
         else:
             self.split_validation = False
-        self.full_ds = ds
+            self.val_size = 0
+            self.train_dataset = ds.map(lambda imgs, frame_idx, label: tf.py_function(dataloader,
+                                                                                      inp=[
+                                                                                          imgs, frame_idx, label, resize_to,
+                                                                                          mean_norm, std_norm, resolution, 'train'],
+                                                                                      Tout=[tf.float32, tf.int32, tf.int32]), num_parallel_calls=16).batch(batch_size).prefetch(batch_size)
+
 
     def hasSplitValidation(self):
         return self.split_validation
 
     def getFullDataset(self):
-        return self.full_ds
+        return self.train_dataset
 
     def getSplitDataset(self):
         return self.train_dataset, self.val_dataset
 
     def getTrainLen(self):
-        if not hasattr(self, "val_size"):
-            return self.__len__()
-        else:
-            return self.__len__() - self.val_size
+        return (self.loader.__len__() - self.val_size) // self.batch_size
 
     def getValLen(self):
-        if not hasattr(self, "val_size"):
-            return 0
-        else:
-            return self.val_size
-
-    def __len__(self):
-        return self.loader.__len__() // self.batch_size
+        return self.val_size // self.batch_size
