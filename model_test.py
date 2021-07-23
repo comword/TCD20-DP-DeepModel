@@ -11,10 +11,10 @@ from model import VTNBuilder
 
 # model = VTNVITBuilder(backbone="vit_b16", HIDDEN_DIM=768, NUM_ATTENTION_HEADS=8)
 
-model = VTNBuilder(temporal="VTNLongformerLayer")
+model = VTNBuilder(temporal="VTNLongformerLayer", input_shape=[3, 16, 224, 224])
 
-test = tf.random.uniform((2, 3, 15, 224, 224))   # B, C, F, H, W
-frame_idx = np.arange(0, 2*15).reshape((2, 15))
+test = tf.random.uniform((1, 3, 16, 224, 224))   # B, C, F, H, W
+frame_idx = np.arange(0, 1*16).reshape((1, 16))
 out = model([test, frame_idx])
 print(out.shape)
 model.summary(line_length=400)

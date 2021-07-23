@@ -39,8 +39,8 @@
         "verbosity": 2,
         "monitor": "min val_loss",
         "early_stop": 10,
-        "lr_dmodel": 80,
-        "warmup_steps": 4000,
+        "lr_dmodel": 150,
+        "warmup_steps": 2000,
         "tensorboard": true
       }
 }

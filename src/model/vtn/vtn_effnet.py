@@ -36,10 +36,10 @@ class VTN(tf.keras.Model):
         self.mlp_output = tf.keras.layers.Dense(
             cfg.n_classes, activation='softmax')
 
-        # self.out = self.call([self.img_input, self.pos_input])
+        self.out = self.call([self.img_input, self.pos_input])
 
-        # super(VTN, self).__init__(
-        #     inputs=[self.img_input, self.pos_input], outputs=self.out, **kwargs)
+        super(VTN, self).__init__(
+            inputs=[self.img_input, self.pos_input], outputs=self.out, **kwargs)
 
     def call(self, x, training=False):
         x, position_ids = x
