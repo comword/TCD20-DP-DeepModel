@@ -42,7 +42,7 @@ def tflite_convert(load_path: Path, out_path: Path):
     print(out.shape)
 
     converter = tf.lite.TFLiteConverter.from_keras_model(modelInst)
-    converter.optimizations = [tf.lite.Optimize.DEFAULT]
+    # converter.optimizations = [tf.lite.Optimize.DEFAULT]
     # converter.target_spec.supported_types = [tf.float16]
     converter.experimental_new_converter = True
     converter.allow_custom_ops = True

@@ -1,0 +1,42 @@
+syntax = "proto3";
+package signUpIn;
+
+service SignUpIn {
+    rpc SignUp (SignUpRequest) returns (SignUpInResponse);
+    rpc SignIn (SignInRequest) returns (SignUpInResponse);
+    rpc SignOut (SignOutRequest) returns (CommonGetResponse);
+    rpc RefreshToken (CommonGetRequest) returns (SignUpInResponse);
+}
+
+message CommonGetRequest {
+    string content = 1;
+}
+
+message CommonGetResponse {
+    int32 code = 1;
+    string msg = 2;
+}
+
+message SignUpRequest {
+    string firstName = 1;
+    string lastName = 2;
+    string email = 3;
+    string password = 4;
+}
+
+message SignUpInResponse {
+    int32 code = 1;
+    string msg = 2;
+    string authKey = 3;
+    string refreshKey = 4;
+}
+
+message SignInRequest {
+    string email = 1;
+    string password = 2;
+}
+
+message SignOutRequest {
+    string authKey = 1;
+    string refreshKey = 2;
+}

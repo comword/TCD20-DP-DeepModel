@@ -1,0 +1,68 @@
+syntax = "proto3";
+package student;
+
+import "google/protobuf/timestamp.proto";
+
+option java_package = "ie.tcd.cs7cs5.invigilatus.rpc";
+option java_multiple_files = true;
+
+message CommonGetRequest {
+    string content = 1;
+}
+
+message CommonGetResponse {
+    int32 code = 1;
+    string msg = 2;
+}
+
+message ExamDetail {
+    string examId = 1;
+    string examName = 2;
+    google.protobuf.Timestamp startTime = 3;
+    google.protobuf.Timestamp endTime = 4;
+    map<string, string> additionInfo = 5;
+    repeated string predictId = 6;
+}
+
+message ExamResponse {
+    int32 code = 1;
+    string msg = 2;
+    repeated ExamDetail exams = 3;
+}
+
+message ModelPredict {
+    string examId = 1;
+    string studentId = 2;
+    google.protobuf.Timestamp time = 3;
+    map<string, float> result = 4; // Unknown: 0.9, Look side: 0.1 ...
+}
+
+message GetPredictRequest {
+    repeated string predictId = 1;
+}
+
+message GetPredictResponse {
+    int32 code = 1;
+    string msg = 2;
+    map<string, ModelPredict> result = 3;
+}
+
+message MetaData {
+    string examId = 1;
+}
+
+message StreamVideoRequest {
+    oneof request {
+        MetaData metadata = 1;
+        bytes chunkdata = 2;
+    }
+}
+
+service StudentApp {
+    rpc UpPredictResult (ModelPredict) returns (CommonGetResponse); // return predictId
+    rpc GetExams (CommonGetRequest) returns (ExamResponse);
+    rpc GetPredicts (GetPredictRequest) returns (GetPredictResponse);
+    rpc StreamVideo (stream StreamVideoRequest) returns (stream CommonGetResponse);
+    rpc GetUserDetail (CommonGetRequest) returns (CommonGetResponse); // extensible JSON user details in msg
+    rpc PutUserDetail (CommonGetRequest) returns (CommonGetResponse);
+}

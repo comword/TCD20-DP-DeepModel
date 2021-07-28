@@ -1,0 +1,69 @@
+syntax = "proto3";
+package invigilator;
+
+import "google/protobuf/timestamp.proto";
+
+message CommonGetRequest {
+    string content = 1;
+}
+
+message CommonGetResponse {
+    int32 code = 1;
+    string msg = 2;
+}
+
+message ExamDetail {
+    string examId = 1;
+    string examName = 2;
+    google.protobuf.Timestamp startTime = 3;
+    google.protobuf.Timestamp endTime = 4;
+    map<string, string> additionInfo = 5;
+    repeated string predictId = 6;
+}
+
+message ExamResponse {
+    repeated ExamDetail pendingExams = 1;
+    repeated ExamDetail finishedExams = 2; // recent 10 exams
+}
+
+message ModelPredict {
+    string examId = 1;
+    string studentId = 2;
+    google.protobuf.Timestamp time = 3;
+    map<string, float> result = 4; // Unknown: 0.9, Look side: 0.1 ...
+}
+
+message GetPredictRequest {
+    repeated string predictId = 1;
+}
+
+message GetPredictResponse {
+    map<string, ModelPredict> result = 1;
+}
+
+message MetaData {
+    string examId = 1;
+}
+
+message HoldExamRequest {
+    string examId = 1; // null for create new exam
+    string examName = 2;
+    google.protobuf.Timestamp startTime = 3;
+    google.protobuf.Timestamp endTime = 4;
+    map<string, string> additionInfo = 5;
+}
+
+message StreamInvigilationResponse {
+    int32 code = 1;
+    string msg = 2;
+    map<string, bytes> chunkdata = 3; // map of studentId, video stream data
+    repeated ModelPredict predicts = 4;
+}
+
+service InvigilatorWeb {
+    rpc UpdateExam (HoldExamRequest) returns (CommonGetResponse); // return examId
+    rpc DeleteExam (CommonGetRequest) returns (CommonGetResponse);
+    rpc GetExams (CommonGetRequest) returns (ExamResponse);
+    rpc GetPredicts (GetPredictRequest) returns (GetPredictResponse);
+    rpc StreamInvigilation (MetaData) returns (stream StreamInvigilationResponse);
+}

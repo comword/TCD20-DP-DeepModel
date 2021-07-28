@@ -45,7 +45,7 @@ print(table.to_latex(index=False))
 #   return dataset
 
 # model.fit(_input_fn(), epochs=2)
-model.save_weights("saved/pcs-vtn")
+model.save_weights("saved/pcs-vtn-test")
 
 converter = tf.lite.TFLiteConverter.from_keras_model(model)
 converter.optimizations = [tf.lite.Optimize.DEFAULT]
@@ -57,9 +57,7 @@ converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS,
 tflite_model = converter.convert()
 
 # == SELECT_TF_OPS ==
-# tf.Erf {device = ""}
-# tf.FusedBatchNormV3 {data_format = "NHWC", device = "", epsilon = 1.000000e-03 : f32, exponential_avg_factor = 1.000000e+00 : f32, is_training = true}
-
+# Flex ops: FlexEinsum, FlexEqual, FlexErf, FlexRoll
 # Save the model.
-with open('saved/pcs-vtn.tflite', 'wb') as f:
+with open('saved/pcs-vtn-test.tflite', 'wb') as f:
     f.write(tflite_model)
