@@ -27,3 +27,16 @@ conda env create --name DProject -f env-gpu.yaml
 Download face detect and landmark models [HaarCascade](https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/haarcascade_frontalface_alt2.xml) and [FacemarkLBF](https://github.com/kurnianggoro/GSOC2017/raw/master/data/lbfmodel.yaml) to be used in the data set anonymisation algorithm.
 
 ## Running
+
+### Training
+
+```bash
+conda activate DProject
+python train.py -c configs/vtn.json
+```
+
+### Convert to TFLite
+
+```bash
+python tflite_conv.py -i saved/0728_150003/model_best -o saved/pcs-vtn.tflite
+```
